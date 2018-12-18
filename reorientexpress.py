@@ -224,17 +224,19 @@ def read_experimental_data(path, format_file = 'auto' ,trimming = False, gzip_en
 		n = 2
 	print('Detected file format: ', format_file)
 	i = -1
+	kept = 0
 	for line in file:
 		if gzip_encoded:
 			line = line.decode()
 		line = line.strip()
 		i += 1
 		if i%n == 0:
-			if i > n_reads*4+1:
+			if kept > n_reads:
 				break
 			if line.startswith('>'):
 				continue
 			else:
+				kept += 1
 				if trimming:
 					sequences.append(line.replace('U', 'T')[trimming:-trimming])
 				else:
@@ -291,12 +293,12 @@ def read_annotation_data(path, format_file = 'auto', n_reads = 50000, trimming =
 		if line.startswith('>'):
 			if options.use_all_annotation or line.split('|')[-2] in ['antisense','lincRNA','processed_transcript', 'protein_coding', 'retained_intron']:
 				if keep_next:
+					kept += 1
 					if trimming:
 						sequences.append(sequence[trimming:-trimming])
 					else:
 						sequences.append(sequence)
 				keep_next = True
-				kept += 1
 				sequence = ''
 			else:
 				keep_next = False
@@ -329,15 +331,17 @@ def read_mapped_data(path, n_reads = 50000, trimming = False, gzip_encoded = 'au
 	file.readline()
 	file.readline()
 	i = 0
+	kept = 0
 	for line in file:
 		if gzip_encoded:
 			line = line.decode()
 		line = line.strip()
 		i += 1
 		if i%4 == 0:
-			if i > n_reads*4:
+			if kept >= n_reads:
 				break
 			else:
+				kept += 1
 				if trimming:
 					sequences[indentifier] = line[-trimming, trimming]
 				else:
