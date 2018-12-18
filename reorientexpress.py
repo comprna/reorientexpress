@@ -61,7 +61,7 @@ if __name__ == '__main__':
 
 def reverse_complement(dna):
 	"""Takes a RNA or DNA sequence string and returns the reverse complement"""
-	complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A', 'U':'A'}
+	complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A', 'U':'A', 'N':'N'}
 	return ''.join([complement[base] for base in dna[::-1]])
 
 def sequences_to_kmers(seq, ks, only_last = False, full_counting = False):
