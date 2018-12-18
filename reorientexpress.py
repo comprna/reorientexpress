@@ -533,7 +533,7 @@ def make_predictions(model, kind_of_data, path_data, n_reads, path_paf, trimming
 
 # Plot functions ------
 
-def plot_roc_curves(models, kind_of_data, path_data, n_reads, path_paf, trimming, full_counting, ks, format_file):
+def plot_roc_curves(models, kind_of_data, path_data, n_reads, path_paf, trimming, full_counting, ks, format_file, spcies):
 	global model, predictions, labels
 	if kind_of_data == 'experimental':
 		sequences = read_experimental_data(path = path_data, trimming = trimming, n_reads = n_reads, format_file = format_file)
@@ -547,10 +547,15 @@ def plot_roc_curves(models, kind_of_data, path_data, n_reads, path_paf, trimming
 		model = load_model(model_name)
 		prediction = model.predict(data.values)
 		predictions.append(prediction)
-		fpr_grd, tpr_grd, _ = roc_curve(labels, prediction.round())
+		fpr_grd, tpr_grd, _ = roc_curve(labels, prediction)
 		plt.plot(fpr_grd, tpr_grd, label = model_name.split('/')[-1])
+	plt.xlabel('False positive rate', fontsize = 15)
+	plt.ylabel('True positive rate', fontsize = 15)
+	plt.title('ROC curve for ' + spcies + ' cDNA orientation prediction', fontsize = 17)
+	plt.legend()
+	plt.tight_layout()
+	plt.savefig('plots/ROC curve for ' + spcies + ' cDNA orientation prediction.png', dpi = 200)
 	return predictions
-
 
 
 if __name__ == '__main__':
