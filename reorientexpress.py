@@ -18,7 +18,9 @@ from keras.callbacks import ModelCheckpoint
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import normalize
 from sklearn.utils import shuffle
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, roc_curve
+import matplotlib.pyplot as plt
+
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description = 'Builds, test and uses models for the orientation of cDNA reads.')
@@ -143,7 +145,7 @@ def prepare_data(sequences, order = 'forwarded', full_counting = True, ks = 5, d
 	if drop_duplicates: 
 		sequences = sequences[~sequences.str[:30].duplicated()]
 		sequences = sequences[~sequences.str[-30:].duplicated()]
-	sequences = sequences[~sequences.str.contains('N')]
+	#sequences = sequences[~sequences.str.contains('N')]
 	if order == 'forwarded':
 		print('Assuming the data provided is all in forward')
 		sequences_reverse = sequences.sample(sequences.shape[0]//2)
@@ -231,7 +233,7 @@ def read_experimental_data(path, format_file = 'auto' ,trimming = False, gzip_en
 		line = line.strip()
 		i += 1
 		if i%n == 0:
-			if kept > n_reads:
+			if kept >= n_reads:
 				break
 			if line.startswith('>'):
 				continue
@@ -244,7 +246,7 @@ def read_experimental_data(path, format_file = 'auto' ,trimming = False, gzip_en
 	sequences = pandas.Series(sequences)
 	return sequences
 
-def read_annotation_data(path, format_file = 'auto', n_reads = 50000, trimming = False, gzip_encoded = 'auto'):
+def read_annotation_data(path, format_file = 'auto', n_reads = 50000, trimming = False, gzip_encoded = 'auto', use_all_annotation = False):
 	"""
 	This function reads data that doesn't come from an experiment but rather from the reference transcriptome.
 	- path: path to the transcriptome file in fasta format.
@@ -275,7 +277,7 @@ def read_annotation_data(path, format_file = 'auto', n_reads = 50000, trimming =
 				_ = line.split('|')[-2]
 			except:
 				print('The file has not the correct format. All the sequence will be kept to avoid errors.')
-				options.use_all_annotation = True
+				use_all_annotation = True
 			format_file = 'fasta'
 		else:
 			raise NameError('Incorrect format')
@@ -291,7 +293,7 @@ def read_annotation_data(path, format_file = 'auto', n_reads = 50000, trimming =
 		if gzip_encoded:
 			line = line.decode()
 		if line.startswith('>'):
-			if options.use_all_annotation or line.split('|')[-2] in ['antisense','lincRNA','processed_transcript', 'protein_coding', 'retained_intron']:
+			if use_all_annotation or line.split('|')[-2] in ['antisense','lincRNA','processed_transcript', 'protein_coding', 'retained_intron']:
 				if keep_next:
 					kept += 1
 					if trimming:
@@ -435,7 +437,7 @@ def fit_network(model, data, labels, epochs = 10, batch_size = 32, verbose = 1 ,
 	return model, history
 
 def build_kmer_model(kind_of_data, path_data, n_reads, path_paf, trimming, full_counting, ks, verbose = 1,
-	epochs = 10, checkpointer = 'cDNAOrderPrediction'):
+	epochs = 10, checkpointer = 'cDNAOrderPrediction', use_all_annotation = False):
 	"""
 	Function that automatically reads and processes the data and builds a model with it. Returns the trained model
 	and the generated dataset and labelset.
@@ -459,7 +461,7 @@ def build_kmer_model(kind_of_data, path_data, n_reads, path_paf, trimming, full_
 	if kind_of_data == 'experimental':
 		sequences = read_experimental_data(path = path_data, trimming = trimming, n_reads = n_reads)
 	elif kind_of_data == 'annotation':
-		sequences = read_annotation_data(path = path_data, trimming = trimming, n_reads = n_reads)
+		sequences = read_annotation_data(path = path_data, trimming = trimming, n_reads = n_reads, use_all_annotation = use_all_annotation)
 	elif kind_of_data == 'mapped':
 		sequences = read_mapped_data(path = path_data, trimming = trimming, n_reads = n_reads)
 	if path_paf:
@@ -473,7 +475,7 @@ def build_kmer_model(kind_of_data, path_data, n_reads, path_paf, trimming, full_
 	model, history = fit_network(model, data, labels, epochs = epochs, verbose = verbose, checkpointer = checkpointer, batch_size = 64)
 	return model, history ,data, labels
 
-def test_model(model, kind_of_data, path_data, n_reads, path_paf, trimming, full_counting, ks):
+def test_model(model, kind_of_data, path_data, n_reads, path_paf, trimming, full_counting, ks, return_predictions = False):
 	"""
 	Function that automatically reads and processes the data and test a model with it. Prints several
 	metrics about the model performance. !!Use the same parameters as used to train the model!!. 
@@ -490,8 +492,8 @@ def test_model(model, kind_of_data, path_data, n_reads, path_paf, trimming, full
 	- ks: maximum lenght of the k-mer counting.
 	- full_counting: ensures that all possible lectures windows are used to find the kmers. It makes the process
 	slower but more accurate.
+	- return_predictions: if True, the predictions and labels are returned with the metrics.
 	"""
-	global data, labels, sequences
 	if kind_of_data == 'experimental':
 		sequences = read_experimental_data(path = path_data, trimming = trimming, n_reads = n_reads, format_file =  options.f)
 	elif kind_of_data == 'annotation':
@@ -507,6 +509,8 @@ def test_model(model, kind_of_data, path_data, n_reads, path_paf, trimming, full
 	print('----------------------Test Results-----------------------\n')
 	print(classification_report(labels,predictions.round()))
 	print('---------------------------------------------------------\n')
+	if return_predictions:
+		return predictions, labels
 
 def make_predictions(model, kind_of_data, path_data, n_reads, path_paf, trimming, full_counting, ks):
 	if kind_of_data == 'experimental':
@@ -525,11 +529,35 @@ def make_predictions(model, kind_of_data, path_data, n_reads, path_paf, trimming
 	data.columns = ['ForwardSequence', 'Score']
 	data.to_csv(options.o+'.csv')
 
+
+
+# Plot functions ------
+
+def plot_roc_curves(models, kind_of_data, path_data, n_reads, path_paf, trimming, full_counting, ks, format_file):
+	global model, predictions, labels
+	if kind_of_data == 'experimental':
+		sequences = read_experimental_data(path = path_data, trimming = trimming, n_reads = n_reads, format_file = format_file)
+	elif kind_of_data == 'annotation':
+		sequences = read_annotation_data(path = path_data, trimming = trimming, n_reads = n_reads, format_file = format_file)
+	elif kind_of_data == 'mapped':
+		sequences = read_mapped_data(path = path_data, trimming = trimming, n_reads = n_reads, format_file = format_file)
+	data, labels = prepare_data(sequences, 'forwarded', full_counting, ks, True, path_paf)
+	predictions = []
+	for model_name in models:
+		model = load_model(model_name)
+		prediction = model.predict(data.values)
+		predictions.append(prediction)
+		fpr_grd, tpr_grd, _ = roc_curve(labels, prediction.round())
+		plt.plot(fpr_grd, tpr_grd, label = model_name.split('/')[-1])
+	return predictions
+
+
+
 if __name__ == '__main__':
 	if options.train:
 		print('\n----Starting Training Pipeline----\n')
 		model, history ,data, labels = build_kmer_model(options.s, options.d, options.r, options.a, options.t, 
-			True, options.k, options.v, options.e ,options.o)
+			True, options.k, options.v, options.e ,options.o, options.use_all_annotation)
 
 	elif options.test:
 		print('\n----Starting Testing Pipeline----\n')
@@ -544,6 +572,7 @@ if __name__ == '__main__':
 		make_predictions(model, options.s, options.d, options.r, options.a, options.t, True, options.k)
 		print('Predictions saved to:', options.o+'.csv')
 
+
 """
 path1 = '/projects_eg/projects/william/from_scratch/nanopore_seq/Garalde_etal/SRR6059706.fastq'
 path2 = '/genomics/users/irubia/simulations/ref/gencode.v28.transcripts.no_pseudogenes.fa'
@@ -553,7 +582,6 @@ path5 = '/projects_eg/projects/william/from_scratch/nanopore_seq/Garalde_etal/SR
 path_transcriptome = '/genomics/users/irubia/simulations/ref/gencode.v28.transcripts.no_pseudogenes.fa'
 path_paf_ = '/genomics/users/joel/CEPH1463/nanopore/cDna1Dpass/Minimap2/run_1/Hopkins_Run1_noAm.paf'
 path_maped = '/genomics/users/joel/CEPH1463/nanopore/cDna1Dpass/fastqs/Hopkins_Run1_20171011_1D.pass.dedup.fastq'
-path_transcriptome_mouse = '/genomics/users/aruiz/hydra/gencode.vM19.transcripts.fa'
 path_transcriptome_mouse = '/genomics/users/aruiz/hydra/gencode.vM19.transcripts.fa'
 path_tshorghum_sequencing = '/genomics/users/aruiz/hydra/line21.fasta'
 """
