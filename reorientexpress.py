@@ -18,7 +18,7 @@ from keras.callbacks import ModelCheckpoint
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import normalize
 from sklearn.utils import shuffle
-from sklearn.metrics import classification_report, roc_curve
+from sklearn.metrics import classification_report, roc_curve, precision_recall_curve
 import matplotlib.pyplot as plt
 
 
@@ -533,7 +533,7 @@ def make_predictions(model, kind_of_data, path_data, n_reads, path_paf, trimming
 
 # Plot functions ------
 
-def plot_roc_curves(models, kind_of_data, path_data, n_reads, path_paf, trimming, full_counting, ks, format_file, spcies):
+def plot_roc_and_precision_recall_curves(models, kind_of_data, path_data, n_reads, path_paf, trimming, full_counting, ks, format_file, spcies):
 	global model, predictions, labels
 	if kind_of_data == 'experimental':
 		sequences = read_experimental_data(path = path_data, trimming = trimming, n_reads = n_reads, format_file = format_file)
@@ -555,8 +555,21 @@ def plot_roc_curves(models, kind_of_data, path_data, n_reads, path_paf, trimming
 	plt.legend()
 	plt.tight_layout()
 	plt.savefig('plots/ROC curve for ' + spcies + ' cDNA orientation prediction.png', dpi = 200)
+	plt.close('all')
+	for model_name in models:
+		model = load_model(model_name)
+		prediction = model.predict(data.values)
+		predictions.append(prediction)
+		precision, recall, _ = precision_recall_curve(labels, prediction)
+		plt.plot(precision, recall, label = model_name.split('/')[-1])
+	plt.xlabel('precision', fontsize = 15)
+	plt.ylabel('Recall', fontsize = 15)
+	plt.title('Precision-recall curve for ' + spcies + ' cDNA orientation prediction', fontsize = 17)
+	plt.legend()
+	plt.tight_layout()
+	plt.savefig('plots/Precision_recall curve for ' + spcies + ' cDNA orientation prediction.png', dpi = 200)
+	plt.close('all')
 	return predictions
-
 
 if __name__ == '__main__':
 	if options.train:
