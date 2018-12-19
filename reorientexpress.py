@@ -145,7 +145,7 @@ def prepare_data(sequences, order = 'forwarded', full_counting = True, ks = 5, d
 	if drop_duplicates: 
 		sequences = sequences[~sequences.str[:30].duplicated()]
 		sequences = sequences[~sequences.str[-30:].duplicated()]
-	#sequences = sequences[~sequences.str.contains('N')]
+	sequences = sequences[~sequences.str.contains('N')]
 	if order == 'forwarded':
 		print('Assuming the data provided is all in forward')
 		sequences_reverse = sequences.sample(sequences.shape[0]//2)
@@ -349,7 +349,7 @@ def read_mapped_data(path, n_reads = 50000, trimming = False, gzip_encoded = 'au
 				else:
 					sequences[indentifier] = line
 		elif line.startswith('@'):
-			indentifier = line[1:37]
+			indentifier = line.split('\t')[0].split(' ')[0][1:]
 	file.close()
 	return pandas.Series(sequences).replace('U', 'T')
 
@@ -529,47 +529,63 @@ def make_predictions(model, kind_of_data, path_data, n_reads, path_paf, trimming
 	data.columns = ['ForwardSequence', 'Score']
 	data.to_csv(options.o+'.csv')
 
-
-
 # Plot functions ------
 
-def plot_roc_and_precision_recall_curves(models, kind_of_data, path_data, n_reads, path_paf, trimming, full_counting, ks, format_file, spcies):
-	global model, predictions, labels
+def plot_roc_and_precision_recall_curves(models, kind_of_data, path_data, n_reads, path_paf, trimming, 
+	full_counting, ks, format_file, species):
+	"""
+	Plots the ROC and the precision-recall-curve for a set of models and a specific data input. 
+	- models: a list of trained model. 
+	- kind_of_data: the kind of data used to train the model. Can be:
+		* 'experimental' if it comes from RNA direct or similars.
+		* 'annotation' if it is the transcriptome reference.
+		* 'mapped' if its a mapped cDNA dataset. It requires a paf file to be provided.
+	- path_data: path to the data that is going to train the model.
+	- n_reads: number of approximate reads to process from the train data. 
+	- path_paf: path to the paf file if we are using mapped data.
+	- trimming: allows to trimming while reading the file, so it's faster than doing it afterwards. False for no trimming. 
+				Use an integer to trim the sequence both sides for that length.
+	- ks: maximum lenght of the k-mer counting.
+	- full_counting: ensures that all possible lectures windows are used to find the kmers. It makes the process
+	slower but more accurate.
+	- format_file: The format of the input data: can be auto, fasta or fastq. 'auto' should be used by default. 
+	- species: the name of the species to be plotted in the plots.
+	"""
 	if kind_of_data == 'experimental':
 		sequences = read_experimental_data(path = path_data, trimming = trimming, n_reads = n_reads, format_file = format_file)
 	elif kind_of_data == 'annotation':
 		sequences = read_annotation_data(path = path_data, trimming = trimming, n_reads = n_reads, format_file = format_file)
 	elif kind_of_data == 'mapped':
 		sequences = read_mapped_data(path = path_data, trimming = trimming, n_reads = n_reads, format_file = format_file)
-	data, labels = prepare_data(sequences, 'forwarded', full_counting, ks, True, path_paf)
-	predictions = []
+	if path_paf:
+		data, labels = prepare_data(sequences, 'mixed', full_counting, ks, True, path_paf)
+	else:
+		data, labels = prepare_data(sequences, 'forwarded', full_counting, ks, True, path_paf)
 	for model_name in models:
 		model = load_model(model_name)
 		prediction = model.predict(data.values)
-		predictions.append(prediction)
 		fpr_grd, tpr_grd, _ = roc_curve(labels, prediction)
 		plt.plot(fpr_grd, tpr_grd, label = model_name.split('/')[-1])
 	plt.xlabel('False positive rate', fontsize = 15)
 	plt.ylabel('True positive rate', fontsize = 15)
-	plt.title('ROC curve for ' + spcies + ' cDNA orientation prediction', fontsize = 17)
+	plt.title('ROC curve for ' + species + ' cDNA orientation prediction', fontsize = 17)
 	plt.legend()
 	plt.tight_layout()
-	plt.savefig('plots/ROC curve for ' + spcies + ' cDNA orientation prediction.png', dpi = 200)
+	plt.savefig('plots/ROC curve for ' + species + ' cDNA orientation prediction.png', dpi = 200)
 	plt.close('all')
 	for model_name in models:
 		model = load_model(model_name)
 		prediction = model.predict(data.values)
-		predictions.append(prediction)
 		precision, recall, _ = precision_recall_curve(labels, prediction)
-		plt.plot(precision, recall, label = model_name.split('/')[-1])
-	plt.xlabel('precision', fontsize = 15)
-	plt.ylabel('Recall', fontsize = 15)
-	plt.title('Precision-recall curve for ' + spcies + ' cDNA orientation prediction', fontsize = 17)
+		plt.plot(recall[:-2], precision[:-2], label = model_name.split('/')[-1])
+	plt.xlabel('precision', fontsize = 13)
+	plt.ylabel('Recall', fontsize = 13)
+	plt.title('Precision-recall curve for ' + species + ' cDNA orientation prediction', fontsize = 15)
 	plt.legend()
 	plt.tight_layout()
-	plt.savefig('plots/Precision_recall curve for ' + spcies + ' cDNA orientation prediction.png', dpi = 200)
+	plt.savefig('plots/Precision_recall curve for ' + species + ' cDNA orientation prediction.png', dpi = 200)
 	plt.close('all')
-	return predictions
+	return precision, recall, _
 
 if __name__ == '__main__':
 	if options.train:
@@ -600,6 +616,12 @@ path5 = '/projects_eg/projects/william/from_scratch/nanopore_seq/Garalde_etal/SR
 path_transcriptome = '/genomics/users/irubia/simulations/ref/gencode.v28.transcripts.no_pseudogenes.fa'
 path_paf_ = '/genomics/users/joel/CEPH1463/nanopore/cDna1Dpass/Minimap2/run_1/Hopkins_Run1_noAm.paf'
 path_maped = '/genomics/users/joel/CEPH1463/nanopore/cDna1Dpass/fastqs/Hopkins_Run1_20171011_1D.pass.dedup.fastq'
+path_paf_yeast = '/genomics/users/joel/s_cerevisiae/map/onlyPri_s_cerevisiae.paf'
+path_mapped_yeast = '/genomics/users/joel/s_cerevisiae/SRR6059708_1.fastq'
 path_transcriptome_mouse = '/genomics/users/aruiz/hydra/gencode.vM19.transcripts.fa'
 path_tshorghum_sequencing = '/genomics/users/aruiz/hydra/line21.fasta'
+path_transcriptome_glabrata = '_candida_glabrata_gca_000002545.ASM254v2.cdna.all.fa'
+
+python3 reorientexpress.py -test -data /genomics/users/joel/CEPH1463/nanopore/cDna1Dpass/fastqs/Hopkins_Run1_20171011_1D.pass.dedup.fastq -annotation /genomics/users/joel/s_cerevisiae/map/onlyPri_s_cerevisiae.paf -k 5 -r 50000 -m saved_models/Sc_transcriptome.model -source mapped
+
 """
