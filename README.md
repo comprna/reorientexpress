@@ -23,11 +23,6 @@ ReorientExpress has three main utilities:
 - Testing a model.
 - Using a model to orient de input sequences.
 
-SUPPA is a flexible and powerful tool to study splicing at the transcript isoform or at the local alternative splicing event level, across multiple conditions, and at high speed and accuracy. SUPPA has various modular operations that can be run separately to:
-
-- Generate transcript events and local alternative splicing (AS) events from an annotation
-- Quantify transcript and local AS event inclusion levels (PSIs) from multiple samples
-- Calculate differential splicing for AS events and differential transcript.
 
 ----------------------------
 # Installation
