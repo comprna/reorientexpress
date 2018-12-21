@@ -267,15 +267,18 @@ def read_annotation_data(path, format_file = 'auto', n_reads = 50000, trimming =
 		file = open(path, 'r')
 	if format_file == 'auto':
 		if gzip_encoded:
-			marker = file.readline().decode()[0]
+			line = file.readline()
+			marker = line.decode()[0]
 		else:
-			marker = file.readline()[0]
+			line = file.readline()
+			marker = line[0]
 		if marker == '@':
 			format_file = 'fastq'
 		elif marker == '>':
 			try:
 				_ = line.split('|')[-2]
 			except:
+				print(line)
 				print('The file has not the correct format. All the sequence will be kept to avoid errors.')
 				use_all_annotation = True
 			format_file = 'fasta'
@@ -293,7 +296,10 @@ def read_annotation_data(path, format_file = 'auto', n_reads = 50000, trimming =
 		if gzip_encoded:
 			line = line.decode()
 		if line.startswith('>'):
-			if use_all_annotation or line.split('|')[-2] in ['antisense','lincRNA','processed_transcript', 'protein_coding', 'retained_intron']:
+			if not use_all_annotation:
+				sline = line.split('|')
+				read_type = sline[-2]
+			if use_all_annotation or read_type in ['antisense','lincRNA','processed_transcript', 'protein_coding', 'retained_intron']:
 				if keep_next:
 					kept += 1
 					if trimming:
@@ -566,24 +572,26 @@ def plot_roc_and_precision_recall_curves(models, kind_of_data, path_data, n_read
 		prediction = model.predict(data.values)
 		fpr_grd, tpr_grd, _ = roc_curve(labels, prediction)
 		plt.plot(fpr_grd, tpr_grd, label = model_name.split('/')[-1])
-	plt.xlabel('False positive rate', fontsize = 15)
-	plt.ylabel('True positive rate', fontsize = 15)
-	plt.title('ROC curve for ' + species + ' cDNA orientation prediction', fontsize = 17)
-	plt.legend()
+	plt.xlabel('False positive rate', fontsize = 17)
+	plt.ylabel('True positive rate', fontsize = 17)
+	plt.tick_params(axis='both', which='major', labelsize=14)
+	plt.title(species + ' cDNA orientation prediction', fontsize = 18)
+	plt.legend(fontsize = 15)
 	plt.tight_layout()
-	plt.savefig('plots/ROC curve for ' + species + ' cDNA orientation prediction.png', dpi = 200)
+	plt.savefig('plots/ROC_' + species + ' cDNA orientation prediction.png', dpi = 200)
 	plt.close('all')
 	for model_name in models:
 		model = load_model(model_name)
 		prediction = model.predict(data.values)
 		precision, recall, _ = precision_recall_curve(labels, prediction)
 		plt.plot(recall[:-2], precision[:-2], label = model_name.split('/')[-1])
-	plt.xlabel('precision', fontsize = 13)
-	plt.ylabel('Recall', fontsize = 13)
-	plt.title('Precision-recall curve for ' + species + ' cDNA orientation prediction', fontsize = 15)
-	plt.legend()
+	plt.xlabel('precision', fontsize = 17)
+	plt.ylabel('Recall', fontsize = 17)
+	plt.tick_params(axis='both', which='major', labelsize=14)
+	plt.title(species + ' cDNA orientation prediction', fontsize = 15)
+	plt.legend(fontsize = 15)
 	plt.tight_layout()
-	plt.savefig('plots/Precision_recall curve for ' + species + ' cDNA orientation prediction.png', dpi = 200)
+	plt.savefig('plots/PRC_'+species + ' cDNA orientation prediction.png', dpi = 200)
 	plt.close('all')
 	return precision, recall, _
 
@@ -608,19 +616,22 @@ if __name__ == '__main__':
 
 
 """
+from reorientexpress import *
 path1 = '/projects_eg/projects/william/from_scratch/nanopore_seq/Garalde_etal/SRR6059706.fastq'
 path2 = '/genomics/users/irubia/simulations/ref/gencode.v28.transcripts.no_pseudogenes.fa'
 path3 = '/genomics/users/aruiz/hydra/NA12878-DirectRNA.pass.dedup.fastq.gz'
 path4 = '/genomics/users/joel/CEPH1463/nanopore/cDna1Dpass/fastqs/Hopkins_Run1_20171011_1D.pass.dedup.fastq'
 path5 = '/projects_eg/projects/william/from_scratch/nanopore_seq/Garalde_etal/SRR6059706.fastq'
 path_transcriptome = '/genomics/users/irubia/simulations/ref/gencode.v28.transcripts.no_pseudogenes.fa'
-path_paf_ = '/genomics/users/joel/CEPH1463/nanopore/cDna1Dpass/Minimap2/run_1/Hopkins_Run1_noAm.paf'
-path_maped = '/genomics/users/joel/CEPH1463/nanopore/cDna1Dpass/fastqs/Hopkins_Run1_20171011_1D.pass.dedup.fastq'
+path_paf = '/genomics/users/joel/CEPH1463/nanopore/cDna1Dpass/Minimap2/run_1/Hopkins_Run1_noAm.paf'
+path_mapped = '/genomics/users/joel/CEPH1463/nanopore/cDna1Dpass/fastqs/Hopkins_Run1_20171011_1D.pass.dedup.fastq'
 path_paf_yeast = '/genomics/users/joel/s_cerevisiae/map/onlyPri_s_cerevisiae.paf'
 path_mapped_yeast = '/genomics/users/joel/s_cerevisiae/SRR6059708_1.fastq'
 path_transcriptome_mouse = '/genomics/users/aruiz/hydra/gencode.vM19.transcripts.fa'
 path_tshorghum_sequencing = '/genomics/users/aruiz/hydra/line21.fasta'
 path_transcriptome_glabrata = '_candida_glabrata_gca_000002545.ASM254v2.cdna.all.fa'
+a,b,c = plot_roc_and_precision_recall_curves(['saved_models/Yeast model', 'saved_models/C. glabrata model'], 'mapped', path_mapped_yeast, 50000, path_paf_yeast, False, True, 5, 'auto', 'Yeast')
+
 
 python3 reorientexpress.py -test -data /genomics/users/joel/CEPH1463/nanopore/cDna1Dpass/fastqs/Hopkins_Run1_20171011_1D.pass.dedup.fastq -annotation /genomics/users/joel/s_cerevisiae/map/onlyPri_s_cerevisiae.paf -k 5 -r 50000 -m saved_models/Sc_transcriptome.model -source mapped
 
