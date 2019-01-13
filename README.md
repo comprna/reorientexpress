@@ -1,6 +1,6 @@
 # ReorientExpress
 
-This is a script that is used to create, test and use models to predict the orientation of cDNA reads using deep neural networks.
+TReorientExpress is a program to create, test and apply models to predict the 5'-to-3' orientation of long-reads from cDNA sequencing with Nanopore or PacBio using deep neural networks.
 
 ----------------------------
 # Table of Contents
@@ -16,7 +16,7 @@ This is a script that is used to create, test and use models to predict the orie
 # Overview
 ----------------------------
 
-ReorientExpress is a tool which main purpose is to predict the orientation of cDNA or RNA-direct reads. It builds kmer-based models using Deep Neural Networks and taking as input a transcriptome annotation or any other fasta/fasq file for which the sequences orientation is known. 
+ReorientExpress is a tool to predict the orientation of cDNA reads from error-prone long-read sequencing technologies. It was developed with the aim to orientate nanopore long-reads from unstranded cDNA libraries without the need of a genome or transcriptome reference, but it is applicable to any set of long-reads. It builds kmer-based models using Deep Neural Networks using as training input a transcriptome annotation or any other fasta/fasq file for which the sequences orientation is known. 
 The software can work with experimental data, annotation data and also with mapped reads providing the corresponding PAF file. 
 ReorientExpress has three main utilities:
 - Training a model.
@@ -50,50 +50,48 @@ Once the package is installed, ReorientExpress can be used from the command line
 Once the package is installed it can be used as an independent program. ReorientExpress has three main functions, one of them must be provided when calling the program:
 
 * -train: takes an input an uses it to train a model.
-* -test: takes a model and a labeled input and tries the performance of the model in the input.
-* -predict: takes a model and an input outputs all the sequences in forward. It also gives a certainty score. 
+* -test: takes a model and a labeled input and estimate the accuracy of the model using the labeled input data.
+* -predict: takes a model and an input and outputs all the sequences in the predicted 5'-to3' orientation. It also gives a certainty score per input sequence.
 
-The different options that the program takes are:
+The different options available are:
 
-* **-h, --help**:            Shows a help message with all the options.
+* **-h, --help**:             Shows a help message with all the options.
 
-*  **-train**:            Set true to train a model.
+*  **-train**:                Set true to train a model.
 
 *  **-test**:                 Set true to test a model.
 
 *  **-predict**:              Set true to use a model to make predictions
 
 *  **-data D, --d D**:        The path to the input data. Must be either fasta or
-                        fastq. Can be compressed in gz. Mandatory.
+                        fastq. Can be compressed in gz format. Mandatory.
                         
 *  **-source {annotation,experimental,mapped}, --s {annotation,experimental,mapped}**:
                         The source of the data. Must be either 'experimental',
                         'annotation' or 'mapped'. Choose experimental for
                         experiments like RNA-direct, annotation for
-                        transcriptomes or other references and mapped for mapped
-                        cDNA reads. Mapped reads require a paf file to know the
-                        orientation. Mandatory.
+                        transcriptomes or other references and mapped for reads mapped 
+                        to a reference transcriptome.
+                        Mapped reads must be in PAF format to extract the orientation. 
+                        Mandatory.
                         
 *  **-format {fasta,fastq,auto}, --f {fasta,fastq,auto}**:
                         The format of the input data. Auto by deafult. Change
                         only if inconsistencies in the name.
                         
-*  **-annotation A, --a A**:  Path to the paf file if a mapped training set which
-                        requires a paf reference is being used.
+*  **-annotation A, --a A**:  Path to the PAF file if a mapped training set is used.
                         
 *  **-use_all_annotation, -aa**:
-                        Uses all the reads, instead of only keeping
-                        antisense,lincRNA,processed_transcript,
-                        protein_coding, and retained_intron. Use it also if
-                        the fasta has unconventional format and gives errors.
+                        Uses all the reads from the annotation, instead of only keeping
+                        protein_coding, lincRNA, processed_transcript, antisense, and retained_intron. 
+                        Use it also if the fasta has unconventional format and gives errors.
                         
 *  **-kmers K, --k K**:       The maximum length of the kmers used for training,
-                        testing and using the models.
+                              testing and using the models. It will use from k=1 up to this number.
                         
-*  **-reads R, --r R**:       Number of reads to read from the dataset.
+*  **-reads R, --r R**:       Number of reads to use from the dataset.
 
-*  **-trimming T, --t T**:    Number of nucleotides to trimm at each side. 0 by
-                        default.
+*  **-trimming T, --t T**:    Number of nucleotides to trimm at each side. 0 by default.
                         
 *  **-verbose, --v**:         Whether to print detailed information about the
                         training process.
@@ -110,7 +108,7 @@ The different options that the program takes are:
 # Inputs and Outputs
 ----------------------------
 
-Al the input sequence files can be in fasta or fastq format. They can also be compressed in gz. 
+All the input sequence files can be in fasta or fastq format. They can also be compressed in gz format. 
 
 ### Examples of possible inputs:
 
@@ -145,7 +143,7 @@ GATTTATGAGTAAGGGATGTGCATTCCTAACTCAAAAATCTGAAATTTGAAATGCCGCCC
 </pre>
 #### Mapped
 
-Takes a file with the same format as experimental and also a paf file with the following shape:
+Takes a file with the same format as experimental and also a PAF file with the following format:
 
 <pre>
 0M1I3M2D4M3D1M1D10M4I11M1D25M1D6M1D10M1D10M
@@ -168,9 +166,9 @@ You can read more about the paf file format [here](https://github.com/lh3/minias
 ### Examples of possible outputs:
 
 Depending on the chosen pipeline, the output can be:
-* Training: a keras model object, from the class keras.engine.sequential.Sequential. It's saved as a binary file that be loaded later.
-* Testing: there is no file output. Only the results displayed on the terminal.
-* Predicting: outputs a csv file with all the reads in forward orientation. It contains three columns: the index, the Forwarded Sequence and the model Score. See below an example:
+* Training: a keras model object, from the class keras.engine.sequential.Sequential (https://keras.io). It is saved as a binary file that be loaded later.
+* Testing: there is no file output. Only the results of the accuracy evaluation displayed on the terminal.
+* Predicting: outputs a csv file with all the reads in the predicted 5'-to-3' orientation. It contains three columns: the index, the predicted 5'-to-3' sequence (ForwardedSequence) and the model Score. See below an example:
 
 | Index  | ForwardSequence  | Score  |
 |---|---|---|
@@ -188,7 +186,7 @@ To train a model:
 reorientexpress -train -data path_to_data -source annotation --v -output my_model
 ```
 
-Which train a model with the data stored in path_to_data, which is an annotation file, suchs as a transcriptome and outputs a file called my_model.model which can be later used to make predictions. Prints relevant information.
+This trains a model with the data stored in path_to_data, which is an annotation file, suchs as a transcriptome and outputs a file called my_model.model which can be later used to make predictions. Prints relevant information.
 
 To make predictions:
 
@@ -196,7 +194,8 @@ To make predictions:
 reorientexpress -predict -data path_to_data -source experimental -model path_to_model -output my_predictions
 ```
 
-Which takes the experimental data stored in path_to_data and the model stored in path_to_model and converts to forward reads the reads that the model predicts are in reverse complementary, printing the results in my_predictions.csv. 
-Also, in the saved_models/ folder we provide a model trained with the human transcriptome annotation and a model trained with the Saccharomyces cerevisiae transcriptome annoation. They can be directly used with the "-model" flag.
+This takes the experimental data stored in path_to_data and the model stored in path_to_model and predicts the 5'-to-3' orientation of reads, i.e. converts to forward reads the reads that the model predicts are reverse complemented, printing the results in my_predictions.csv. 
+
+In the saved_models/ folder we provide a model trained with the human transcriptome annotation and a model trained with the Saccharomyces cerevisiae transcriptome annoation. They can be directly used with the "-model" flag.
 
 
