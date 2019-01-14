@@ -541,10 +541,11 @@ def make_predictions(model, kind_of_data, path_data, n_reads, path_paf, trimming
 	predictions = model.predict(data.values)
 	data = pandas.DataFrame(labels)
 	data['predictions'] = predictions
-	data1 = data.reset_index()
+	data['orientation'] = 0
+	data.loc[data['predictions'] > 0.5, 'orientation'] = 1	
 	data.loc[data['predictions'] > 0.5, 0] = data[0].apply(reverse_complement)
 	data.loc[data['predictions'] < 0.5, 'predictions'] = 1 - data['predictions']
-	data.columns = ['ForwardSequence', 'Score']
+	data.columns = ['ForwardSequence', 'Score', 'Orientation']
 	data.to_csv(options.o+'.csv')
 
 # Plot functions ------
