@@ -20,6 +20,9 @@ from sklearn.preprocessing import normalize
 from sklearn.utils import shuffle
 from sklearn.metrics import classification_report, roc_curve, precision_recall_curve
 import matplotlib.pyplot as plt
+import os
+import itertools
+from scipy import stats
 
 
 if __name__ == '__main__':
@@ -124,7 +127,7 @@ def generate_sets(data, labels, norm = False, do_not_split = False, no_test = Fa
 		return X_train, y_train, X_CV, y_CV, X_test,y_test
 
 def prepare_data(sequences, order = 'forwarded', full_counting = True, ks = 5, drop_duplicates = False, 
-	paf_path = False):
+	paf_path = False, ensure_all_kmers = False):
 	"""
 	Prepares a pandas Series containing nucleotide sequences into a pandas dataframe with kmers counting. Returns a pandas
 	data frame with the normalized kmer counts as columns and the reads as rows and a pandas Series with the labels (0 for
@@ -140,6 +143,7 @@ def prepare_data(sequences, order = 'forwarded', full_counting = True, ks = 5, d
 	- full_counting: full_counting: ensures that all possible lectures windows are used to find the kmers. It makes the process
 	slower but more accurate.
 	- ks: maximum lenght of the k-mer counting.
+	- ensure_all_kmers: if True, it makes sure all the mers are calculated. Use only for small files if some the prediction fails.
 	"""
 	print('Preparing the data')
 	if drop_duplicates: 
@@ -183,6 +187,14 @@ def prepare_data(sequences, order = 'forwarded', full_counting = True, ks = 5, d
 		data = sequences.fillna(0)
 	else:
 		raise NameError('Invalid source format')
+	if ensure_all_kmers:
+		bases=['A','T','G','C']
+		for k in range(ks):
+			kmers = [''.join(p) for p in itertools.product(bases, repeat=k+1)]
+			for kmer in kmers:
+				if kmer not in data.columns:
+					data[kmer] = 0
+		data = data.sort(axis = 1)
 	print('Data processed successfully')
 	return data, labels
 
@@ -594,6 +606,26 @@ def plot_roc_and_precision_recall_curves(models, kind_of_data, path_data, n_read
 	plt.savefig('plots/PRC_'+species + ' cDNA orientation prediction.png', dpi = 200)
 	plt.close('all')
 	return precision, recall, _
+
+def analyze_clusters(path, model):
+	global data
+	model = load_model(model)
+	results = []
+	lengths = []
+	for file in os.listdir(path):
+		if not file.startswith('.'):
+			full_path = path+'/'+file
+			sequences = read_experimental_data(full_path, format_file = 'auto' ,trimming = False, gzip_encoded = 'auto', n_reads = 10e10)
+			data, labels = prepare_data(sequences, 'unknown', True, 5, True, False,False)
+			try:
+				predictons = model.predict(data.values).round()
+			except:
+				data, labels = prepare_data(sequences, 'unknown', True, 5, True, False,True)
+				predictons = model.predict(data.values).round()
+			agreement = stats.mode(predictons)[1][0][0]/len(predictons)
+			results.append(agreement)
+			lengths.append(len(predictons))
+	return results, lengths
 
 if __name__ == '__main__':
 	if options.train:
