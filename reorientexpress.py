@@ -351,7 +351,7 @@ def read_mapped_data(path, n_reads = 50000, trimming = False, gzip_encoded = 'au
 			else:
 				kept += 1
 				if trimming:
-					sequences[indentifier] = line[-trimming: trimming]
+					sequences[indentifier] = line[trimming: -trimming]
 				else:
 					sequences[indentifier] = line
 		elif line.startswith('@'):
