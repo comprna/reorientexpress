@@ -351,7 +351,7 @@ def read_mapped_data(path, n_reads = 50000, trimming = False, gzip_encoded = 'au
 			else:
 				kept += 1
 				if trimming:
-					sequences[indentifier] = line[-trimming: trimming]
+					sequences[indentifier] = line[-trimming, trimming]
 				else:
 					sequences[indentifier] = line
 		elif line.startswith('@'):
@@ -634,5 +634,26 @@ a,b,c = plot_roc_and_precision_recall_curves(['saved_models/Yeast model', 'saved
 
 
 python3 reorientexpress.py -test -data /genomics/users/joel/CEPH1463/nanopore/cDna1Dpass/fastqs/Hopkins_Run1_20171011_1D.pass.dedup.fastq -annotation /genomics/users/joel/s_cerevisiae/map/onlyPri_s_cerevisiae.paf -k 5 -r 50000 -m saved_models/Sc_transcriptome.model -source mapped
+
+python3 reorientexpress.py -predict -data /genomics/users/joel/CEPH1463/nanopore/cDna1Dpass/fastqs/Hopkins_Run1_20171011_1D.pass.dedup.fastq  -k 5 -m saved_models/Hs_transcriptome.model -source mapped -o Hs_cdna_orientation.csv
+python3 reorientexpress.py -predict -data /genomics/users/joel/s_cerevisiae/SRR6059708_1.fastq -k 5 -r 1000000 -m saved_models/Sc_transcriptome.model -source mapped -o Sc_cdna_orientation.csv
+
+python3 reorientexpress.py -predict -data splited_Sc/xaa -k 5 -m saved_models/Sc_transcriptome.model -source mapped -o Sc_cdna_orientation_1.csv
+python3 reorientexpress.py -predict -data splited_Sc/xab -k 5 -m saved_models/Sc_transcriptome.model -source mapped -o Sc_cdna_orientation_2.csv
+python3 reorientexpress.py -predict -data splited_Sc/xac -k 5 -m saved_models/Sc_transcriptome.model -source mapped -o Sc_cdna_orientation_3.csv
+python3 reorientexpress.py -predict -data splited_Sc/xad -k 5 -m saved_models/Sc_transcriptome.model -source mapped -o Sc_cdna_orientation_4.csv
+python3 reorientexpress.py -predict -data splited_Sc/xae -k 5 -m saved_models/Sc_transcriptome.model -source mapped -o Sc_cdna_orientation_5.csv
+python3 reorientexpress.py -predict -data splited_Sc/xaf -k 5 -m saved_models/Sc_transcriptome.model -source mapped -o Sc_cdna_orientation_6.csv
+python3 reorientexpress.py -predict -data splited_Sc/xag -k 5 -m saved_models/Sc_transcriptome.model -source mapped -o Sc_cdna_orientation_7.csv
+python3 reorientexpress.py -predict -data splited_Sc/xah -k 5 -m saved_models/Sc_transcriptome.model -source mapped -o Sc_cdna_orientation_8.csv
+python3 reorientexpress.py -predict -data splited_Sc/xai -k 5 -m saved_models/Sc_transcriptome.model -source mapped -o Sc_cdna_orientation_9.csv
+python3 reorientexpress.py -predict -data splited_Sc/xaj -k 5 -m saved_models/Sc_transcriptome.model -source mapped -o Sc_cdna_orientation_10.csv
+python3 reorientexpress.py -predict -data splited_Sc/xak -k 5 -m saved_models/Sc_transcriptome.model -source mapped -o Sc_cdna_orientation_11.csv
+python3 reorientexpress.py -predict -data splited_Sc/xal -k 5 -m saved_models/Sc_transcriptome.model -source mapped -o Sc_cdna_orientation_12.csv
+python3 reorientexpress.py -predict -data splited_Sc/xam -k 5 -m saved_models/Sc_transcriptome.model -source mapped -o Sc_cdna_orientation_13.csv
+python3 reorientexpress.py -predict -data splited_Sc/xan -k 5 -m saved_models/Sc_transcriptome.model -source mapped -o Sc_cdna_orientation_14.csv
+python3 reorientexpress.py -predict -data splited_Sc/xao -k 5 -m saved_models/Sc_transcriptome.model -source mapped -o Sc_cdna_orientation_15.csv
+python3 reorientexpress.py -predict -data splited_Sc/xap -k 5 -m saved_models/Sc_transcriptome.model -source mapped -o Sc_cdna_orientation_16.csv
+python3 reorientexpress.py -predict -data splited_Sc/xaq -k 5 -m saved_models/Sc_transcriptome.model -source mapped -o Sc_cdna_orientation_17.csv
 
 """
