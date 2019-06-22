@@ -486,7 +486,7 @@ def build_kmer_model(kind_of_data, path_data, n_reads, path_paf, trimming, full_
 		order = 'mixed'
 	else:
 		order = 'forwarded'
-	data, labels = prepare_data(sequences, order, full_counting, ks, True, path_paf, only_last_kmer)
+	data, labels = prepare_data(sequences, order, full_counting, ks, True, path_paf, only_last_kmer=only_last_kmer)
 	model = plain_NN(data.shape[1],1, 5, 500, step_activation = 'relu', final_activation = 'sigmoid', 
 		optimizer = False, kind_of_model = 'classification', halve_each_layer = True,dropout = True, 
 		learning_rate = 0.00001)
