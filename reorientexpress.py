@@ -67,7 +67,7 @@ def reverse_complement(dna):
 	complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A', 'U':'A', 'N':'N'}
 	return ''.join([complement[base] for base in dna[::-1]])
 
-def sequences_to_kmers(seq, ks, only_last = False, full_counting = False):
+def sequences_to_kmers(seq, ks, only_last_kmer = False, full_counting = False):
 	"""Converts a sequence to kmers counting. Returns a pandas Series object for easier processing.
 	- seq: a string containing only nucleotides.
 	- ks: maximum lenght of the k-mer counting.
@@ -127,7 +127,7 @@ def generate_sets(data, labels, norm = False, do_not_split = False, no_test = Fa
 		return X_train, y_train, X_CV, y_CV, X_test,y_test
 
 def prepare_data(sequences, order = 'forwarded', full_counting = True, ks = 5, drop_duplicates = False, 
-	paf_path = False, ensure_all_kmers = False):
+	paf_path = False, ensure_all_kmers = False, only_last_kmer = False):
 	"""
 	Prepares a pandas Series containing nucleotide sequences into a pandas dataframe with kmers counting. Returns a pandas
 	data frame with the normalized kmer counts as columns and the reads as rows and a pandas Series with the labels (0 for
@@ -155,8 +155,8 @@ def prepare_data(sequences, order = 'forwarded', full_counting = True, ks = 5, d
 		sequences_reverse = sequences.sample(sequences.shape[0]//2)
 		sequences = sequences.drop(sequences_reverse.index)
 		sequences_reverse = sequences_reverse.apply(reverse_complement)
-		sequences = sequences.apply(sequences_to_kmers, ks = ks, full_counting = full_counting)
-		sequences_reverse = sequences_reverse.apply(sequences_to_kmers, ks = ks, full_counting = full_counting)
+		sequences = sequences.apply(sequences_to_kmers, ks = ks, full_counting = full_counting, only_last_kmer=only_last_kmer)
+		sequences_reverse = sequences_reverse.apply(sequences_to_kmers, ks = ks, full_counting = full_counting, only_last_kmer=only_last_kmer)
 		sequences = pandas.DataFrame(sequences)
 		sequences_reverse = pandas.DataFrame(sequences_reverse)
 		sequences['s'] = 0
@@ -178,11 +178,11 @@ def prepare_data(sequences, order = 'forwarded', full_counting = True, ks = 5, d
 		sequences = sequences.dropna()
 		labels = sequences['strand']
 		data = sequences.drop('strand', axis = 1)
-		data = sequences['seq'].apply(sequences_to_kmers, ks = ks, full_counting = full_counting)
+		data = sequences['seq'].apply(sequences_to_kmers, ks = ks, full_counting = full_counting, only_last_kmer=only_last_kmer)
 		data = data.fillna(0)
 	elif order == 'unknown':
 		labels = sequences
-		sequences = sequences.apply(sequences_to_kmers, ks = ks, full_counting = full_counting)
+		sequences = sequences.apply(sequences_to_kmers, ks = ks, full_counting = full_counting, only_last_kmer=only_last_kmer)
 		sequences = pandas.DataFrame(sequences)
 		data = sequences.fillna(0)
 	else:
@@ -455,7 +455,7 @@ def fit_network(model, data, labels, epochs = 10, batch_size = 32, verbose = 1 ,
 	return model, history
 
 def build_kmer_model(kind_of_data, path_data, n_reads, path_paf, trimming, full_counting, ks, verbose = 1,
-	epochs = 10, checkpointer = 'cDNAOrderPrediction', use_all_annotation = False):
+	epochs = 10, checkpointer = 'cDNAOrderPrediction', use_all_annotation = False, only_last_kmer = False):
 	"""
 	Function that automatically reads and processes the data and builds a model with it. Returns the trained model
 	and the generated dataset and labelset.
@@ -486,7 +486,7 @@ def build_kmer_model(kind_of_data, path_data, n_reads, path_paf, trimming, full_
 		order = 'mixed'
 	else:
 		order = 'forwarded'
-	data, labels = prepare_data(sequences, order, full_counting, ks, True, path_paf)
+	data, labels = prepare_data(sequences, order, full_counting, ks, True, path_paf, only_last_kmer)
 	model = plain_NN(data.shape[1],1, 5, 500, step_activation = 'relu', final_activation = 'sigmoid', 
 		optimizer = False, kind_of_model = 'classification', halve_each_layer = True,dropout = True, 
 		learning_rate = 0.00001)
