@@ -71,13 +71,13 @@ def sequences_to_kmers(seq, ks, only_last_kmer = False, full_counting = False):
 	"""Converts a sequence to kmers counting. Returns a pandas Series object for easier processing.
 	- seq: a string containing only nucleotides.
 	- ks: maximum lenght of the k-mer counting.
-	- only_last: calculate only the biggest k-mer, but not the others.
+	- only_last_kmer: calculate only the biggest k-mer, but not the others.
 	- full_counting: ensures that all possible lectures windows are used to find the kmers. It makes the process
 	slower but more accurate.
 	"""
 	kmers = {}
 	length = len(seq)
-	if only_last:
+	if only_last_kmer:
 		starting = ks
 	else:
 		starting = 1
