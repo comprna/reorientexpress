@@ -57,7 +57,7 @@ if __name__ == '__main__':
 		help = 'Where to store the outputs. using "--train" outputs a model, while using "-predict" outputs a csv. Corresponding extensions will be added.')
 	parser.add_argument('-model', '--m', action = 'store',
 		help = 'The model to test or to predict with.')
-	parser.add_argument('-reverse_all', '--r', action = 'store', default = False,
+	parser.add_argument('-reverse_all', '--r', action = 'store_true', default = False,
 		help = 'All the sequences will be reversed, instead of half of themx')
 	options = parser.parse_args()
 
