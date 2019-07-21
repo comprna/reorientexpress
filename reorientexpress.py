@@ -57,6 +57,8 @@ if __name__ == '__main__':
 		help = 'Where to store the outputs. using "--train" outputs a model, while using "-predict" outputs a csv. Corresponding extensions will be added.')
 	parser.add_argument('-model', '--m', action = 'store',
 		help = 'The model to test or to predict with.')
+	parser.add_argument('-reverse_all', '--r', action = 'store', default = False,
+		help = 'All the sequences will be reversed, instead of half of themx')
 	options = parser.parse_args()
 
 
@@ -127,7 +129,7 @@ def generate_sets(data, labels, norm = False, do_not_split = False, no_test = Fa
 		return X_train, y_train, X_CV, y_CV, X_test,y_test
 
 def prepare_data(sequences, order = 'forwarded', full_counting = True, ks = 5, drop_duplicates = False, 
-	paf_path = False, ensure_all_kmers = False, only_last_kmer = False):
+	paf_path = False, ensure_all_kmers = False, only_last_kmer = False, reverse_all = False):
 	"""
 	Prepares a pandas Series containing nucleotide sequences into a pandas dataframe with kmers counting. Returns a pandas
 	data frame with the normalized kmer counts as columns and the reads as rows and a pandas Series with the labels (0 for
@@ -152,7 +154,10 @@ def prepare_data(sequences, order = 'forwarded', full_counting = True, ks = 5, d
 	sequences = sequences[~sequences.str.contains('N')]
 	if order == 'forwarded':
 		print('Assuming the data provided is all in forward')
-		sequences_reverse = sequences.sample(sequences.shape[0]//2)
+		if reverse_all:
+			sequences_reverse = sequences[:]
+		else:
+			sequences_reverse = sequences.sample(sequences.shape[0]//2)
 		sequences = sequences.drop(sequences_reverse.index)
 		sequences_reverse = sequences_reverse.apply(reverse_complement)
 		sequences = sequences.apply(sequences_to_kmers, ks = ks, full_counting = full_counting, only_last_kmer=only_last_kmer)
@@ -455,7 +460,7 @@ def fit_network(model, data, labels, epochs = 10, batch_size = 32, verbose = 1 ,
 	return model, history
 
 def build_kmer_model(kind_of_data, path_data, n_reads, path_paf, trimming, full_counting, ks, verbose = 1,
-	epochs = 10, checkpointer = 'cDNAOrderPrediction', use_all_annotation = False, only_last_kmer = False):
+	epochs = 10, checkpointer = 'cDNAOrderPrediction', use_all_annotation = False, only_last_kmer = False, reverse_all = False):
 	"""
 	Function that automatically reads and processes the data and builds a model with it. Returns the trained model
 	and the generated dataset and labelset.
@@ -486,7 +491,7 @@ def build_kmer_model(kind_of_data, path_data, n_reads, path_paf, trimming, full_
 		order = 'mixed'
 	else:
 		order = 'forwarded'
-	data, labels = prepare_data(sequences, order, full_counting, ks, True, path_paf, only_last_kmer=only_last_kmer)
+	data, labels = prepare_data(sequences, order, full_counting, ks, True, path_paf, only_last_kmer=only_last_kmer, reverse_all = reverse_all)
 	model = plain_NN(data.shape[1],1, 5, 500, step_activation = 'relu', final_activation = 'sigmoid', 
 		optimizer = False, kind_of_model = 'classification', halve_each_layer = True,dropout = True, 
 		learning_rate = 0.00001)
@@ -632,7 +637,7 @@ if __name__ == '__main__':
 	if options.train:
 		print('\n----Starting Training Pipeline----\n')
 		model, history ,data, labels = build_kmer_model(options.s, options.d, options.r, options.a, options.t, 
-			True, options.k, options.v, options.e ,options.o, options.use_all_annotation)
+			True, options.k, options.v, options.e ,options.o, options.use_all_annotation, options.reverse_all)
 
 	elif options.test:
 		print('\n----Starting Testing Pipeline----\n')
