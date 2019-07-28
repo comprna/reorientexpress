@@ -158,9 +158,10 @@ def prepare_data(sequences, order = 'forwarded', full_counting = True, ks = 5, d
 		print('Assuming the data provided is all in forward')
 		if reverse_all:
 			sequences_reverse = sequences.sample(sequences.shape[0])
+			sequences_reverse.index = sequences_reverse.index + sequences.shape[0]
 		else:
 			sequences_reverse = sequences.sample(sequences.shape[0]//2)
-		sequences = sequences.drop(sequences_reverse.index)
+			sequences = sequences.drop(sequences_reverse.index)
 		sequences_reverse = sequences_reverse.apply(reverse_complement)
 		sequences = sequences.apply(sequences_to_kmers, ks = ks, full_counting = full_counting, only_last_kmer=only_last_kmer)
 		sequences_reverse = sequences_reverse.apply(sequences_to_kmers, ks = ks, full_counting = full_counting, only_last_kmer=only_last_kmer)
@@ -172,7 +173,7 @@ def prepare_data(sequences, order = 'forwarded', full_counting = True, ks = 5, d
 		sequences = sequences.sample(frac = 1)
 		labels = sequences['s']
 		data = sequences.drop('s', axis = 1)
-		data = data.fillna(0)		
+		data = data.fillna(0)
 	elif order == 'mixed':
 		print('Using a paf file to infer the orientation of reads')
 		ids = pandas.read_table(paf_path, usecols = [0,4], index_col = 0, header = None)
@@ -201,9 +202,11 @@ def prepare_data(sequences, order = 'forwarded', full_counting = True, ks = 5, d
 			for kmer in kmers:
 				if kmer not in data.columns:
 					data[kmer] = 0
-		data = data.sort(axis = 1)
+		data = data.sort_index(axis = 1)
 	print('Data processed successfully')
 	return data, labels
+
+data, labels = prepare_data(seq, 'forwarded', True,2, False, '/Users/angelruiz/Desktop/cdna_human_no_secondary_mapq_60_unique.paf', False,False, True)
 
 
 # Reading functions ------
@@ -494,7 +497,7 @@ def build_kmer_model(kind_of_data, path_data, n_reads, path_paf, trimming, full_
 		order = 'mixed'
 	else:
 		order = 'forwarded'
-	data, labels = prepare_data(sequences, order, full_counting, ks, True, path_paf, only_last_kmer=only_last_kmer, reverse_all = reverse_all)
+	data, labels = prepare_data(sequences, order, full_counting, ks, False, path_paf, only_last_kmer=only_last_kmer, reverse_all = reverse_all)
 	model = plain_NN(data.shape[1],1, 5, 500, step_activation = 'relu', final_activation = 'sigmoid', 
 		optimizer = False, kind_of_model = 'classification', halve_each_layer = True,dropout = True, 
 		learning_rate = 0.00001)
@@ -530,7 +533,7 @@ def test_model(model, kind_of_data, path_data, n_reads, path_paf, trimming, full
 		order = 'mixed'
 	else:
 		order = 'forwarded'
-	data, labels = prepare_data(sequences, order, full_counting, ks, True, path_paf)
+	data, labels = prepare_data(sequences, order, full_counting, ks, False, path_paf)
 	predictions = model.predict(data.values)
 	print('----------------------Test Results-----------------------\n')
 	print(classification_report(labels,predictions.round()))
@@ -545,7 +548,7 @@ def make_predictions(model, kind_of_data, path_data, n_reads, path_paf, trimming
 		sequences = read_annotation_data(path = path_data, trimming = trimming, n_reads = n_reads, format_file = options.f)
 	elif kind_of_data == 'mapped':
 		sequences = read_mapped_data(path = path_data, trimming = trimming, n_reads = n_reads, format_file = options.f)
-	data, labels = prepare_data(sequences, 'unknown', full_counting, ks, True, path_paf)
+	data, labels = prepare_data(sequences, 'unknown', full_counting, ks, False, path_paf)
 	predictions = model.predict(data.values)
 	data = pandas.DataFrame(labels)
 	data['predictions'] = predictions
@@ -585,9 +588,9 @@ def plot_roc_and_precision_recall_curves(models, kind_of_data, path_data, n_read
 	elif kind_of_data == 'mapped':
 		sequences = read_mapped_data(path = path_data, trimming = trimming, n_reads = n_reads, format_file = format_file)
 	if path_paf:
-		data, labels = prepare_data(sequences, 'mixed', full_counting, ks, True, path_paf)
+		data, labels = prepare_data(sequences, 'mixed', full_counting, ks, False, path_paf)
 	else:
-		data, labels = prepare_data(sequences, 'forwarded', full_counting, ks, True, path_paf)
+		data, labels = prepare_data(sequences, 'forwarded', full_counting, ks, False, path_paf)
 	for model_name in models:
 		model = load_model(model_name)
 		prediction = model.predict(data.values)
@@ -625,11 +628,11 @@ def analyze_clusters(path, model):
 		if not file.startswith('.'):
 			full_path = path+'/'+file
 			sequences = read_experimental_data(full_path, format_file = 'auto' ,trimming = False, gzip_encoded = 'auto', n_reads = int(10e10))
-			data, labels = prepare_data(sequences, 'unknown', True, 5, True, False,False)
+			data, labels = prepare_data(sequences, 'unknown', True, 5, False, False,False)
 			try:
 				predictons = model.predict(data.values).round()
 			except:
-				data, labels = prepare_data(sequences, 'unknown', True, 5, True, False,True)
+				data, labels = prepare_data(sequences, 'unknown', True, 5, False, False,True)
 				predictons = model.predict(data.values).round()
 			agreement = stats.mode(predictons)[1][0][0]/len(predictons)
 			results.append(agreement)
