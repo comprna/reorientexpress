@@ -157,7 +157,7 @@ def prepare_data(sequences, order = 'forwarded', full_counting = True, ks = 5, d
 	if order == 'forwarded':
 		print('Assuming the data provided is all in forward')
 		if reverse_all:
-			sequences_reverse = sequences[:]
+			sequences_reverse = sequences.sample(sequences.shape[0])
 		else:
 			sequences_reverse = sequences.sample(sequences.shape[0]//2)
 		sequences = sequences.drop(sequences_reverse.index)
