@@ -122,7 +122,7 @@ def generate_sets(data, labels, norm = False, do_not_split = False, no_test = Fa
 		labels = labels.loc[data.index]
 		print('sets generated')
 		return data, labels
-	X_train, X_cvt, y_train, y_cvt = train_test_split(data[:mn_reads], labels[:mn_reads], train_size = 0.75, random_state = 0)
+	X_train, X_cvt, y_train, y_cvt = train_test_split(data[:int(mn_reads)], labels[:int(mn_reads)], train_size = 0.75, random_state = 0)
 	X_CV, X_test, y_CV, y_test = train_test_split(X_cvt, y_cvt, train_size = 0.50, random_state = 0)
 	print('sets generated')
 	if no_test:
