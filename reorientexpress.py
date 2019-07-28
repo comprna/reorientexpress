@@ -206,9 +206,6 @@ def prepare_data(sequences, order = 'forwarded', full_counting = True, ks = 5, d
 	print('Data processed successfully')
 	return data, labels
 
-data, labels = prepare_data(seq, 'forwarded', True,2, False, '/Users/angelruiz/Desktop/cdna_human_no_secondary_mapq_60_unique.paf', False,False, True)
-
-
 # Reading functions ------
 
 def read_experimental_data(path, format_file = 'auto' ,trimming = False, gzip_encoded = 'auto', 
