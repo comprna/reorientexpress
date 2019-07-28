@@ -33,7 +33,7 @@ if __name__ == '__main__':
 		help = 'Set true to test a model.')
 	parser.add_argument('-predict', default = False, action = 'store_true', 
 		help = 'Set true to use a model to make predictions')
-	parser.add_argument('-data','--d', action = 'store', type = str, required = True,default = False,
+	parser.add_argument('-data','--d', action = 'store', type = str, required = True, default = False,
 		help = 'The path to the input data. Must be either fasta or fastq. Can be compressed in gz.')
 	parser.add_argument('-source', '--s', action = 'store', type = str, required = True, choices = ['annotation','experimental','mapped'],
 		help = 'The source of the data. Must be either \'experimental\', \' annotation\' or \'mapped\'. Choose experimental for experiments like RNA-direct, annotation for transcriptomes and mapped for mapped cDNA reads. Mapped reads require a paf file to know the orientation.')
@@ -637,10 +637,11 @@ def analyze_clusters(path, model):
 	return results, lengths
 
 if __name__ == '__main__':
+	print(options.ra)
 	if options.train:
 		print('\n----Starting Training Pipeline----\n')
 		model, history ,data, labels = build_kmer_model(options.s, options.d, options.r, options.a, options.t, 
-			True, options.k, options.v, options.e ,options.o, options.use_all_annotation, options.reverse_all, options.reads_to_model)
+			True, options.k, options.v, options.e ,options.o, options.use_all_annotation, options.ra, options.rm)
 
 	elif options.test:
 		print('\n----Starting Testing Pipeline----\n')
