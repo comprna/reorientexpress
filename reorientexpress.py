@@ -103,7 +103,7 @@ def sequences_to_kmers(seq, ks, only_last_kmer = False, full_counting = False):
 					kmers[subseq] =  k/(length*windows)
 	return pandas.Series(kmers)
 
-def generate_sets(data, labels, norm = False, do_not_split = False, no_test = False, mn_reads = 10e10):
+def generate_sets(data, labels, norm = False, do_not_split = False, no_test = False, mn_reads = int(10e10)):
 	"""
 	Generate sets for the training, validating and testing. The return depends on the parameters.
 	- data: train data. A matrix with columns being normalized counter kmers ordered alphabetically and rows as reads.
@@ -422,7 +422,7 @@ def plain_NN(input_shape, output_shape, n_layers = 5, n_nodes = 5, step_activati
 	print(model.summary())
 	return model
 
-def fit_network(model, data, labels, epochs = 10, batch_size = 32, verbose = 1 ,checkpointer = False, no_test = True, mn_reads = 10e10):
+def fit_network(model, data, labels, epochs = 10, batch_size = 32, verbose = 1 ,checkpointer = False, no_test = True, mn_reads = int(10e10)):
 	"""
 	Fits a neural network into a model and returns the history to easily analyze the performance.
 	Returns the trained model and the training history, for evaluation purposes.
@@ -463,7 +463,7 @@ def fit_network(model, data, labels, epochs = 10, batch_size = 32, verbose = 1 ,
 
 def build_kmer_model(kind_of_data, path_data, n_reads, path_paf, trimming, full_counting, ks, verbose = 1,
 	epochs = 10, checkpointer = 'cDNAOrderPrediction', use_all_annotation = False, only_last_kmer = False, reverse_all = False,
-	mn_reads = 10e10):
+	mn_reads = int(10e10)):
 	"""
 	Function that automatically reads and processes the data and builds a model with it. Returns the trained model
 	and the generated dataset and labelset.
@@ -501,7 +501,7 @@ def build_kmer_model(kind_of_data, path_data, n_reads, path_paf, trimming, full_
 	model, history = fit_network(model, data, labels, epochs = epochs, verbose = verbose, checkpointer = checkpointer, batch_size = 64, mn_reads = mn_reads)
 	return model, history ,data, labels
 
-def test_model(model, kind_of_data, path_data, n_reads, path_paf, trimming, full_counting, ks, return_predictions = False, mn_reads = 10e10):
+def test_model(model, kind_of_data, path_data, n_reads, path_paf, trimming, full_counting, ks, return_predictions = False, mn_reads = int(10e10)):
 	"""
 	Function that automatically reads and processes the data and test a model with it. Prints several
 	metrics about the model performance. !!Use the same parameters as used to train the model!!. 
@@ -624,7 +624,7 @@ def analyze_clusters(path, model):
 	for file in os.listdir(path):
 		if not file.startswith('.'):
 			full_path = path+'/'+file
-			sequences = read_experimental_data(full_path, format_file = 'auto' ,trimming = False, gzip_encoded = 'auto', n_reads = 10e10)
+			sequences = read_experimental_data(full_path, format_file = 'auto' ,trimming = False, gzip_encoded = 'auto', n_reads = int(10e10))
 			data, labels = prepare_data(sequences, 'unknown', True, 5, True, False,False)
 			try:
 				predictons = model.predict(data.values).round()
