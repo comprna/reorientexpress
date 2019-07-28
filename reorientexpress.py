@@ -59,7 +59,7 @@ if __name__ == '__main__':
 		help = 'The model to test or to predict with.')
 	parser.add_argument('-reverse_all', '--ra', action = 'store_true', default = False,
 		help = 'All the sequences will be reversed, instead of half of them')
-	parser.add_argument('-reads_to_model', '--rm', action = 'store', type = int, default = 10e10,
+	parser.add_argument('-reads_to_model', '--rm', action = 'store', type = int, default = int(10e10),
 		help = 'Number of reads to use from the read ones')
 	options = parser.parse_args()
 
