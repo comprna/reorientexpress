@@ -57,8 +57,10 @@ if __name__ == '__main__':
 		help = 'Where to store the outputs. using "--train" outputs a model, while using "-predict" outputs a csv. Corresponding extensions will be added.')
 	parser.add_argument('-model', '--m', action = 'store',
 		help = 'The model to test or to predict with.')
-	parser.add_argument('-reverse_all', '--r', action = 'store_true', default = False,
-		help = 'All the sequences will be reversed, instead of half of themx')
+	parser.add_argument('-reverse_all', '--ra', action = 'store_true', default = False,
+		help = 'All the sequences will be reversed, instead of half of them')
+	parser.add_argument('-reads_to_model', '--rm', action = 'store', type = int, default = 10e10,
+		help = 'Number of reads to use from the read ones')
 	options = parser.parse_args()
 
 
@@ -101,7 +103,7 @@ def sequences_to_kmers(seq, ks, only_last_kmer = False, full_counting = False):
 					kmers[subseq] =  k/(length*windows)
 	return pandas.Series(kmers)
 
-def generate_sets(data, labels, norm = False, do_not_split = False, no_test = False):
+def generate_sets(data, labels, n_reads, norm = False, do_not_split = False, no_test = False, n_reads = 10e10):
 	"""
 	Generate sets for the training, validating and testing. The return depends on the parameters.
 	- data: train data. A matrix with columns being normalized counter kmers ordered alphabetically and rows as reads.
@@ -120,7 +122,7 @@ def generate_sets(data, labels, norm = False, do_not_split = False, no_test = Fa
 		labels = labels.loc[data.index]
 		print('sets generated')
 		return data, labels
-	X_train, X_cvt, y_train, y_cvt = train_test_split(data, labels, train_size = 0.75, random_state = 0)
+	X_train, X_cvt, y_train, y_cvt = train_test_split(data[:n_reads], labels[:n_reads], train_size = 0.75, random_state = 0)
 	X_CV, X_test, y_CV, y_test = train_test_split(X_cvt, y_cvt, train_size = 0.50, random_state = 0)
 	print('sets generated')
 	if no_test:
@@ -420,7 +422,7 @@ def plain_NN(input_shape, output_shape, n_layers = 5, n_nodes = 5, step_activati
 	print(model.summary())
 	return model
 
-def fit_network(model, data, labels, epochs = 10, batch_size = 32, verbose = 1 ,checkpointer = False, no_test = True):
+def fit_network(model, data, labels, epochs = 10, batch_size = 32, verbose = 1 ,checkpointer = False, no_test = True, n_reads = 10e10):
 	"""
 	Fits a neural network into a model and returns the history to easily analyze the performance.
 	Returns the trained model and the training history, for evaluation purposes.
@@ -437,9 +439,9 @@ def fit_network(model, data, labels, epochs = 10, batch_size = 32, verbose = 1 ,
 
 	"""
 	if no_test:
-		X_train, y_train, X_CV, y_CV = generate_sets(data, labels, no_test = no_test)
+		X_train, y_train, X_CV, y_CV = generate_sets(data, labels, no_test = no_test, n_reads = n_reads)
 	else:
-		X_train, y_train, X_CV, y_CV, X_test,y_test = generate_sets(data, labels)
+		X_train, y_train, X_CV, y_CV, X_test,y_test = generate_sets(data, labels, n_reads = n_reads)
 	if checkpointer:
 		print('Using Checkpointer')
 		model_file = checkpointer+'.model'
@@ -460,7 +462,8 @@ def fit_network(model, data, labels, epochs = 10, batch_size = 32, verbose = 1 ,
 	return model, history
 
 def build_kmer_model(kind_of_data, path_data, n_reads, path_paf, trimming, full_counting, ks, verbose = 1,
-	epochs = 10, checkpointer = 'cDNAOrderPrediction', use_all_annotation = False, only_last_kmer = False, reverse_all = False):
+	epochs = 10, checkpointer = 'cDNAOrderPrediction', use_all_annotation = False, only_last_kmer = False, reverse_all = False,
+	mn_reads = 10e10):
 	"""
 	Function that automatically reads and processes the data and builds a model with it. Returns the trained model
 	and the generated dataset and labelset.
@@ -495,10 +498,10 @@ def build_kmer_model(kind_of_data, path_data, n_reads, path_paf, trimming, full_
 	model = plain_NN(data.shape[1],1, 5, 500, step_activation = 'relu', final_activation = 'sigmoid', 
 		optimizer = False, kind_of_model = 'classification', halve_each_layer = True,dropout = True, 
 		learning_rate = 0.00001)
-	model, history = fit_network(model, data, labels, epochs = epochs, verbose = verbose, checkpointer = checkpointer, batch_size = 64)
+	model, history = fit_network(model, data, labels, epochs = epochs, verbose = verbose, checkpointer = checkpointer, batch_size = 64, n_reads = mn_reads)
 	return model, history ,data, labels
 
-def test_model(model, kind_of_data, path_data, n_reads, path_paf, trimming, full_counting, ks, return_predictions = False):
+def test_model(model, kind_of_data, path_data, n_reads, path_paf, trimming, full_counting, ks, return_predictions = False, mn_reads = 10e10):
 	"""
 	Function that automatically reads and processes the data and test a model with it. Prints several
 	metrics about the model performance. !!Use the same parameters as used to train the model!!. 
@@ -527,7 +530,7 @@ def test_model(model, kind_of_data, path_data, n_reads, path_paf, trimming, full
 		order = 'mixed'
 	else:
 		order = 'forwarded'
-	data, labels = prepare_data(sequences, order, full_counting, ks, True, path_paf)
+	data, labels = prepare_data(sequences, order, full_counting, ks, True, path_paf, n_reads = mn_reads)
 	predictions = model.predict(data.values)
 	print('----------------------Test Results-----------------------\n')
 	print(classification_report(labels,predictions.round()))
@@ -637,7 +640,7 @@ if __name__ == '__main__':
 	if options.train:
 		print('\n----Starting Training Pipeline----\n')
 		model, history ,data, labels = build_kmer_model(options.s, options.d, options.r, options.a, options.t, 
-			True, options.k, options.v, options.e ,options.o, options.use_all_annotation, options.reverse_all)
+			True, options.k, options.v, options.e ,options.o, options.use_all_annotation, options.reverse_all, options.reads_to_model)
 
 	elif options.test:
 		print('\n----Starting Testing Pipeline----\n')
