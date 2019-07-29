@@ -45,6 +45,8 @@ if __name__ == '__main__':
 		help = 'Uses all the reads, instead of only keeping antisense,lincRNA,processed_transcript, protein_coding, and retained_intron. Use it also if the fasta has unconventional format and gives errors.')
 	parser.add_argument('-kmers', '--k', action = 'store', type = int, required = False, default = 5,
 		help = 'The maximum length of the kmers used for training, testing and using the models.')
+	parser.add_argument('-fixedkmer', '--fk', action = 'store_true', required = False, default = False,
+		help = 'Only use the last kmer length')
 	parser.add_argument('-reads', '--r', action = 'store', type = int, default = 10e10,
 		help = 'Number of reads to read from the dataset.')
 	parser.add_argument('-trimming', '--t', action = 'store', type = int, default = False,
@@ -641,7 +643,7 @@ if __name__ == '__main__':
 	if options.train:
 		print('\n----Starting Training Pipeline----\n')
 		model, history ,data, labels = build_kmer_model(options.s, options.d, options.r, options.a, options.t, 
-			True, options.k, options.v, options.e ,options.o, options.use_all_annotation, options.ra, options.rm)
+			True, options.k, options.v, options.e ,options.o, options.use_all_annotation, options.fk,options.ra, options.rm)
 
 	elif options.test:
 		print('\n----Starting Testing Pipeline----\n')
