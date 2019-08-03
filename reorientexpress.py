@@ -102,15 +102,17 @@ def sequences_to_kmers(seq, ks, only_last_kmer = False, full_counting = False, o
 				if len(subseq) < k:
 					continue
 				if subseq in kmers:
+					print(subseq)
 					if one_hot:
 						kmers[subseq] = 1
 					else:
-						kmers[subseq] += k/(length*windows)
+						kmers[subseq] += 1/(length-k+1)
 				else:
+					print(subseq)
 					if one_hot:
 						kmers[subseq] = 1
 					else:
-						kmers[subseq] =  k/(length*windows)
+						kmers[subseq] =  1/(length-k+1)
 
 	return pandas.Series(kmers)
 
@@ -661,7 +663,7 @@ if __name__ == '__main__':
 	elif options.test:
 		print('\n----Starting Testing Pipeline----\n')
 		model = load_model(options.m)
-		test_model(model, options.s, options.d, options.r, options.a, options.t, True, options.k, options.oh, options.rm)
+		test_model(model, options.s, options.d, options.r, options.a, options.t, True, options.k, options.oh, False,options.rm)
 
 	elif options.predict:
 		print('\n----Starting Prediction Pipeline----\n')
