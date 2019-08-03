@@ -9,7 +9,8 @@ Then, provide all the necessary parameters and files.
 Type -h for a detailed list of the parameters. 
 
 """
-
+import os
+import itertools
 import pandas, math, gzip, numpy, argparse
 from keras import optimizers
 from keras.layers import Dense, Dropout, Activation
@@ -20,8 +21,6 @@ from sklearn.preprocessing import normalize
 from sklearn.utils import shuffle
 from sklearn.metrics import classification_report, roc_curve, precision_recall_curve
 import matplotlib.pyplot as plt
-import os
-import itertools
 from scipy import stats
 
 
@@ -63,6 +62,8 @@ if __name__ == '__main__':
 		help = 'All the sequences will be reversed, instead of half of them')
 	parser.add_argument('-reads_to_model', '--rm', action = 'store', type = int, default = int(10e10),
 		help = 'Number of reads to use from the read ones')
+	parser.add_argument('-one_hot', '--oh', action = 'store_true', default = False,
+		help = 'Use one hot encoding instead of kmer counting')
 	options = parser.parse_args()
 
 
@@ -73,13 +74,14 @@ def reverse_complement(dna):
 	complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A', 'U':'A', 'N':'N'}
 	return ''.join([complement[base] for base in dna[::-1]])
 
-def sequences_to_kmers(seq, ks, only_last_kmer = False, full_counting = False):
+def sequences_to_kmers(seq, ks, only_last_kmer = False, full_counting = False, one_hot = False):
 	"""Converts a sequence to kmers counting. Returns a pandas Series object for easier processing.
 	- seq: a string containing only nucleotides.
 	- ks: maximum lenght of the k-mer counting.
 	- only_last_kmer: calculate only the biggest k-mer, but not the others.
 	- full_counting: ensures that all possible lectures windows are used to find the kmers. It makes the process
 	slower but more accurate.
+	- one_hot: if true, instead of counting kmers, it performs one-hot encoding.
 	"""
 	kmers = {}
 	length = len(seq)
@@ -100,9 +102,16 @@ def sequences_to_kmers(seq, ks, only_last_kmer = False, full_counting = False):
 				if len(subseq) < k:
 					continue
 				if subseq in kmers:
-					kmers[subseq] += k/(length*windows)
+					if one_hot:
+						kmers[subseq] = 1
+					else:
+						kmers[subseq] += k/(length*windows)
 				else:
-					kmers[subseq] =  k/(length*windows)
+					if one_hot:
+						kmers[subseq] = 1
+					else:
+						kmers[subseq] =  k/(length*windows)
+
 	return pandas.Series(kmers)
 
 def generate_sets(data, labels, norm = False, do_not_split = False, no_test = False, mn_reads = int(10e10)):
@@ -133,7 +142,8 @@ def generate_sets(data, labels, norm = False, do_not_split = False, no_test = Fa
 		return X_train, y_train, X_CV, y_CV, X_test,y_test
 
 def prepare_data(sequences, order = 'forwarded', full_counting = True, ks = 5, drop_duplicates = False, 
-	paf_path = False, ensure_all_kmers = False, only_last_kmer = False, reverse_all = False):
+	paf_path = False, ensure_all_kmers = False, only_last_kmer = False, reverse_all = False,
+	one_hot = False):
 	"""
 	Prepares a pandas Series containing nucleotide sequences into a pandas dataframe with kmers counting. Returns a pandas
 	data frame with the normalized kmer counts as columns and the reads as rows and a pandas Series with the labels (0 for
@@ -165,8 +175,8 @@ def prepare_data(sequences, order = 'forwarded', full_counting = True, ks = 5, d
 			sequences_reverse = sequences.sample(sequences.shape[0]//2)
 			sequences = sequences.drop(sequences_reverse.index)
 		sequences_reverse = sequences_reverse.apply(reverse_complement)
-		sequences = sequences.apply(sequences_to_kmers, ks = ks, full_counting = full_counting, only_last_kmer=only_last_kmer)
-		sequences_reverse = sequences_reverse.apply(sequences_to_kmers, ks = ks, full_counting = full_counting, only_last_kmer=only_last_kmer)
+		sequences = sequences.apply(sequences_to_kmers, ks = ks, full_counting = full_counting, only_last_kmer=only_last_kmerm, one_hot = one_hot)
+		sequences_reverse = sequences_reverse.apply(sequences_to_kmers, ks = ks, full_counting = full_counting, only_last_kmer=only_last_kmer, one_hot = one_hot)
 		sequences = pandas.DataFrame(sequences)
 		sequences_reverse = pandas.DataFrame(sequences_reverse)
 		sequences['s'] = 0
@@ -188,11 +198,11 @@ def prepare_data(sequences, order = 'forwarded', full_counting = True, ks = 5, d
 		sequences = sequences.dropna()
 		labels = sequences['strand']
 		data = sequences.drop('strand', axis = 1)
-		data = sequences['seq'].apply(sequences_to_kmers, ks = ks, full_counting = full_counting, only_last_kmer=only_last_kmer)
+		data = sequences['seq'].apply(sequences_to_kmers, ks = ks, full_counting=full_counting, only_last_kmer=only_last_kmer, one_hot=one_hot)
 		data = data.fillna(0)
 	elif order == 'unknown':
 		labels = sequences
-		sequences = sequences.apply(sequences_to_kmers, ks = ks, full_counting = full_counting, only_last_kmer=only_last_kmer)
+		sequences = sequences.apply(sequences_to_kmers, ks = ks, full_counting = full_counting, only_last_kmer=only_last_kmer, one_hot=one_hot)
 		sequences = pandas.DataFrame(sequences)
 		data = sequences.fillna(0)
 	else:
@@ -465,7 +475,7 @@ def fit_network(model, data, labels, epochs = 10, batch_size = 32, verbose = 1 ,
 
 def build_kmer_model(kind_of_data, path_data, n_reads, path_paf, trimming, full_counting, ks, verbose = 1,
 	epochs = 10, checkpointer = 'cDNAOrderPrediction', use_all_annotation = False, only_last_kmer = False, reverse_all = False,
-	mn_reads = int(10e10)):
+	mn_reads = int(10e10), one_hot = False):
 	"""
 	Function that automatically reads and processes the data and builds a model with it. Returns the trained model
 	and the generated dataset and labelset.
@@ -496,14 +506,15 @@ def build_kmer_model(kind_of_data, path_data, n_reads, path_paf, trimming, full_
 		order = 'mixed'
 	else:
 		order = 'forwarded'
-	data, labels = prepare_data(sequences, order, full_counting, ks, False, path_paf, only_last_kmer=only_last_kmer, reverse_all = reverse_all)
+	data, labels = prepare_data(sequences, order, full_counting, ks, False, path_paf, only_last_kmer=only_last_kmer, reverse_all = reverse_all, one_hot = one_hot)
+	print(data, labels)
 	model = plain_NN(data.shape[1],1, 5, 500, step_activation = 'relu', final_activation = 'sigmoid', 
 		optimizer = False, kind_of_model = 'classification', halve_each_layer = True,dropout = True, 
 		learning_rate = 0.00001)
 	model, history = fit_network(model, data, labels, epochs = epochs, verbose = verbose, checkpointer = checkpointer, batch_size = 64, mn_reads = mn_reads)
 	return model, history ,data, labels
 
-def test_model(model, kind_of_data, path_data, n_reads, path_paf, trimming, full_counting, ks, return_predictions = False, mn_reads = int(10e10)):
+def test_model(model, kind_of_data, path_data, n_reads, path_paf, trimming, full_counting, ks, one_hot, return_predictions = False, mn_reads = int(10e10),):
 	"""
 	Function that automatically reads and processes the data and test a model with it. Prints several
 	metrics about the model performance. !!Use the same parameters as used to train the model!!. 
@@ -532,7 +543,7 @@ def test_model(model, kind_of_data, path_data, n_reads, path_paf, trimming, full
 		order = 'mixed'
 	else:
 		order = 'forwarded'
-	data, labels = prepare_data(sequences, order, full_counting, ks, False, path_paf)
+	data, labels = prepare_data(sequences, order, full_counting, ks, False, path_paf, one_hot=one_hot)
 	predictions = model.predict(data.values)
 	print('----------------------Test Results-----------------------\n')
 	print(classification_report(labels,predictions.round()))
@@ -540,14 +551,14 @@ def test_model(model, kind_of_data, path_data, n_reads, path_paf, trimming, full
 	if return_predictions:
 		return predictions, labels
 
-def make_predictions(model, kind_of_data, path_data, n_reads, path_paf, trimming, full_counting, ks):
+def make_predictions(model, kind_of_data, path_data, n_reads, path_paf, trimming, full_counting, ks, one_hot):
 	if kind_of_data == 'experimental':
 		sequences = read_experimental_data(path = path_data, trimming = trimming, n_reads = n_reads, format_file = options.f)
 	elif kind_of_data == 'annotation':
 		sequences = read_annotation_data(path = path_data, trimming = trimming, n_reads = n_reads, format_file = options.f)
 	elif kind_of_data == 'mapped':
 		sequences = read_mapped_data(path = path_data, trimming = trimming, n_reads = n_reads, format_file = options.f)
-	data, labels = prepare_data(sequences, 'unknown', full_counting, ks, False, path_paf)
+	data, labels = prepare_data(sequences, 'unknown', full_counting, ks, False, path_paf, one_hot = one_hot)
 	predictions = model.predict(data.values)
 	data = pandas.DataFrame(labels)
 	data['predictions'] = predictions
@@ -643,17 +654,18 @@ if __name__ == '__main__':
 	if options.train:
 		print('\n----Starting Training Pipeline----\n')
 		model, history ,data, labels = build_kmer_model(options.s, options.d, options.r, options.a, options.t, 
-			True, options.k, options.v, options.e ,options.o, options.use_all_annotation, options.fk,options.ra, options.rm)
+			True, options.k, options.v, options.e ,options.o, options.use_all_annotation, options.fk,options.ra, options.rm,
+			options.oh)
 
 	elif options.test:
 		print('\n----Starting Testing Pipeline----\n')
 		model = load_model(options.m)
-		test_model(model, options.s, options.d, options.r, options.a, options.t, True, options.k)
+		test_model(model, options.s, options.d, options.r, options.a, options.t, True, options.k, options.oh)
 
 	elif options.predict:
 		print('\n----Starting Prediction Pipeline----\n')
 		model = load_model(options.m)
 		print('Model successfully loaded')
 		print(model.summary())
-		make_predictions(model, options.s, options.d, options.r, options.a, options.t, True, options.k)
+		make_predictions(model, options.s, options.d, options.r, options.a, options.t, True, options.k, options.oh)
 		print('Predictions saved to:', options.o+'.csv')
