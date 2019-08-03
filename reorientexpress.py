@@ -102,13 +102,11 @@ def sequences_to_kmers(seq, ks, only_last_kmer = False, full_counting = False, o
 				if len(subseq) < k:
 					continue
 				if subseq in kmers:
-					print(subseq)
 					if one_hot:
 						kmers[subseq] = 1
 					else:
 						kmers[subseq] += 1/(length-k+1)
 				else:
-					print(subseq)
 					if one_hot:
 						kmers[subseq] = 1
 					else:
