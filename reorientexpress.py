@@ -175,7 +175,7 @@ def prepare_data(sequences, order = 'forwarded', full_counting = True, ks = 5, d
 			sequences_reverse = sequences.sample(sequences.shape[0]//2)
 			sequences = sequences.drop(sequences_reverse.index)
 		sequences_reverse = sequences_reverse.apply(reverse_complement)
-		sequences = sequences.apply(sequences_to_kmers, ks = ks, full_counting = full_counting, only_last_kmer=only_last_kmerm, one_hot = one_hot)
+		sequences = sequences.apply(sequences_to_kmers, ks = ks, full_counting = full_counting, only_last_kmer=only_last_kmer, one_hot = one_hot)
 		sequences_reverse = sequences_reverse.apply(sequences_to_kmers, ks = ks, full_counting = full_counting, only_last_kmer=only_last_kmer, one_hot = one_hot)
 		sequences = pandas.DataFrame(sequences)
 		sequences_reverse = pandas.DataFrame(sequences_reverse)
@@ -514,7 +514,7 @@ def build_kmer_model(kind_of_data, path_data, n_reads, path_paf, trimming, full_
 	model, history = fit_network(model, data, labels, epochs = epochs, verbose = verbose, checkpointer = checkpointer, batch_size = 64, mn_reads = mn_reads)
 	return model, history ,data, labels
 
-def test_model(model, kind_of_data, path_data, n_reads, path_paf, trimming, full_counting, ks, one_hot, return_predictions = False, mn_reads = int(10e10),):
+def test_model(model, kind_of_data, path_data, n_reads, path_paf, trimming, full_counting, ks, one_hot, return_predictions = False, mn_reads = int(10e10)):
 	"""
 	Function that automatically reads and processes the data and test a model with it. Prints several
 	metrics about the model performance. !!Use the same parameters as used to train the model!!. 
@@ -544,6 +544,7 @@ def test_model(model, kind_of_data, path_data, n_reads, path_paf, trimming, full
 	else:
 		order = 'forwarded'
 	data, labels = prepare_data(sequences, order, full_counting, ks, False, path_paf, one_hot=one_hot)
+	data, labels = (data[:int(mn_reads)], labels[:int(mn_reads)])
 	predictions = model.predict(data.values)
 	print('----------------------Test Results-----------------------\n')
 	print(classification_report(labels,predictions.round()))
@@ -660,7 +661,7 @@ if __name__ == '__main__':
 	elif options.test:
 		print('\n----Starting Testing Pipeline----\n')
 		model = load_model(options.m)
-		test_model(model, options.s, options.d, options.r, options.a, options.t, True, options.k, options.oh)
+		test_model(model, options.s, options.d, options.r, options.a, options.t, True, options.k, options.oh, options.rm)
 
 	elif options.predict:
 		print('\n----Starting Prediction Pipeline----\n')
