@@ -599,9 +599,9 @@ def plot_roc_and_precision_recall_curves(models, kind_of_data, path_data, n_read
 	elif kind_of_data == 'mapped':
 		sequences = read_mapped_data(path = path_data, trimming = trimming, n_reads = n_reads, format_file = format_file)
 	if path_paf:
-		data, labels = prepare_data(sequences, 'mixed', full_counting, ks, False, path_paf)
+		data, labels = prepare_data(sequences, 'mixed', full_counting, ks, False, path_paf, True)
 	else:
-		data, labels = prepare_data(sequences, 'forwarded', full_counting, ks, False, path_paf)
+		data, labels = prepare_data(sequences, 'forwarded', full_counting, ks, False, path_paf, True)
 	for model_name in models:
 		model = load_model(model_name)
 		prediction = model.predict(data.values)
@@ -631,7 +631,6 @@ def plot_roc_and_precision_recall_curves(models, kind_of_data, path_data, n_read
 	return precision, recall, _
 
 def analyze_clusters(path, model):
-	global data
 	model = load_model(model)
 	results = []
 	lengths = []
