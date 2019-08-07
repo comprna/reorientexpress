@@ -299,22 +299,26 @@ def read_annotation_data(path, format_file = 'auto', n_reads = 50000, trimming =
 	if format_file == 'auto':
 		if gzip_encoded:
 			line = file.readline()
-			marker = line.decode()[0]
+			line = line.decode()
+			marker = line[0]
 		else:
 			line = file.readline()
 			marker = line[0]
 		if marker == '@':
 			format_file = 'fastq'
 		elif marker == '>':
-			try:
-				_ = line.split('|')[-2]
-			except:
+			if len(line.split('|')) > 2:
+				separator = '|'
+			elif len(line.split(' ')) > 2:
+				separator = ' '
+			else:
 				print(line)
 				print('The file has not the correct format. All the sequence will be kept to avoid errors.')
 				use_all_annotation = True
 			format_file = 'fasta'
 		else:
 			raise NameError('Incorrect format')
+		print(separator)
 	if format_file == 'fastq':
 		n = 4
 	elif format_file == 'fasta':
@@ -327,9 +331,14 @@ def read_annotation_data(path, format_file = 'auto', n_reads = 50000, trimming =
 		if gzip_encoded:
 			line = line.decode()
 		if line.startswith('>'):
+			line = line.strip()
 			if not use_all_annotation:
-				sline = line.split('|')
-				read_type = sline[-2]
+				if separator == '|':
+					sline = line.split('|')
+					read_type = sline[-2]
+				elif separator == ' ':
+					sline = line.split(' ')
+					read_type = sline[-1].split(':')[1]
 			if use_all_annotation or read_type in ['antisense','lincRNA','processed_transcript', 'protein_coding', 'retained_intron']:
 				if keep_next:
 					kept += 1
@@ -507,7 +516,6 @@ def build_kmer_model(kind_of_data, path_data, n_reads, path_paf, trimming, full_
 	else:
 		order = 'forwarded'
 	data, labels = prepare_data(sequences, order, full_counting, ks, False, path_paf, only_last_kmer=only_last_kmer, reverse_all = reverse_all, one_hot = one_hot)
-	print(data, labels)
 	model = plain_NN(data.shape[1],1, 5, 500, step_activation = 'relu', final_activation = 'sigmoid', 
 		optimizer = False, kind_of_model = 'classification', halve_each_layer = True,dropout = True, 
 		learning_rate = 0.00001)
