@@ -11,7 +11,7 @@ Type -h for a detailed list of the parameters.
 """
 import os
 import itertools
-import pandas, math, gzip, numpy, argparse
+import pandas, math, gzip, numpy, argparse, time
 from keras import optimizers
 from keras.layers import Dense, Dropout, Activation
 from keras.models import Sequential, load_model
@@ -468,9 +468,12 @@ def fit_network(model, data, labels, epochs = 10, batch_size = 32, verbose = 1 ,
 		model_file = checkpointer+'.model'
 		checkpointer = ModelCheckpoint(filepath= model_file,  
 			verbose=verbose, save_best_only=True)
+		train_time0 = time.time()
 		history = model.fit(X_train.values, y_train.values, batch_size=batch_size, 
 			epochs=epochs,validation_data=(X_CV.values, y_CV.values), verbose=verbose,
 			callbacks = [checkpointer])
+		train_time1 = time.time()
+		print('Elapsed time while training: ', train_time1 - train_time0, ' seconds')
 		model.load_weights(model_file)
 		model.save(model_file)
 		print('Best model train accuracy: ', model.evaluate(X_train.values, y_train.values))
@@ -658,7 +661,7 @@ def analyze_clusters(path, model):
 	return results, lengths
 
 if __name__ == '__main__':
-	print(options.ra)
+	time0 = time.time() 
 	if options.train:
 		print('\n----Starting Training Pipeline----\n')
 		model, history ,data, labels = build_kmer_model(options.s, options.d, options.r, options.a, options.t, 
@@ -677,3 +680,6 @@ if __name__ == '__main__':
 		print(model.summary())
 		make_predictions(model, options.s, options.d, options.r, options.a, options.t, True, options.k, options.oh)
 		print('Predictions saved to:', options.o+'.csv')
+	time1 = time.time()
+	delta = time1 - time0
+	print('Elapsed time\t', delta, ' seconds')
