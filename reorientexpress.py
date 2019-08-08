@@ -399,6 +399,36 @@ def read_mapped_data(path, n_reads = 50000, trimming = False, gzip_encoded = 'au
 	file.close()
 	return pandas.Series(sequences).replace('U', 'T')
 
+
+def read_cluster_data(path,trimming = False, n_reads = 50000):
+	"""
+	"""
+	sequences = []
+	ids = []
+	kept = 0
+	q = False
+	file = open(path)
+	for line in file:
+		line = line.strip()
+		if kept >= n_reads:
+			break
+		if line == '+':
+			q = True
+			continue
+		elif q==True:
+			q = False
+			continue
+		if line.startswith('@'):
+			ids.append(line[1:37])
+		else:
+			kept += 1
+			if trimming:
+				sequences.append(line.replace('U', 'T')[trimming:-trimming])
+			else:
+				sequences.append(line.replace('U', 'T'))
+	sequences = pandas.Series(sequences, index = ids)
+	return sequences
+
 # Model functions ------
 
 def plain_NN(input_shape, output_shape, n_layers = 5, n_nodes = 5, step_activation = 'relu',
@@ -641,15 +671,40 @@ def plot_roc_and_precision_recall_curves(models, kind_of_data, path_data, n_read
 	plt.close('all')
 	return precision, recall, _
 
-def analyze_clusters(path, model):
-	model = load_model(model)
+def analyze_clusters(path, model=False, csv=False):
+	if model:
+		model = load_model(model)
+	else:
+		prediction_csv = pandas.read_csv(csv, index_col = 0, usecols=['id', 'strand', 'predictions'])
 	results = []
 	lengths = []
 	for file in os.listdir(path):
-		if not file.startswith('.'):
+		if not file.startswith('.') and file.endswith('.fq'):
 			full_path = path+'/'+file
 			sequences = read_experimental_data(full_path, format_file = 'auto' ,trimming = False, gzip_encoded = 'auto', n_reads = int(10e10))
-			data, labels = prepare_data(sequences, 'unknown', True, 5, False, False,False)
+			data, labels = prepare_data(sequences, 'unknown', True, 5, False, False,True)
+			try:
+				predictons = model.predict(data.values).round()
+			except:
+				data, labels = prepare_data(sequences, 'unknown', True, 5, False, False,True)
+				predictons = model.predict(data.values).round()
+			agreement = stats.mode(predictons)[1][0][0]/len(predictons)
+			results.append(agreement)
+			lengths.append(len(predictons))
+	return results, lengths
+
+
+def analyze_clustersv2(path, model=False, csv=False):
+	if model:
+		model = load_model(model)
+	else:
+		prediction_csv = pandas.read_csv(csv, index_col = 0, usecols=['id', 'strand', 'predictions'])
+	results = []
+	lengths = []
+	for file in os.listdir(path):
+		if not file.startswith('.') and file.endswith('.fq'):
+			full_path = path+'/'+file
+			sequences = read_cluster_data(full_path)
 			try:
 				predictons = model.predict(data.values).round()
 			except:
