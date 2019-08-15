@@ -92,8 +92,12 @@ The different options available are:
 *  **-reads R, --r R**:       Number of reads to use from the dataset.
 
 *  **-trimming T, --t T**:    Number of nucleotides to trimm at each side. 0 by default.
+
+*  **-reverse_all**:          Reverse-complement all input sequences to double up the training input, 
+                        instead of reverse-complementing just a random half of the input sequences, 
+                        which is the default. 
                         
-*  **-verbose, --v**:         Whether to print detailed information about the
+*  **-verbose, --v**:         Flag to print detailed information about the 
                         training process.
                         
 *  **-epochs E, --e E**:      Number of epochs to train the model.
