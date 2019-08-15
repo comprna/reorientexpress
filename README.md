@@ -1,6 +1,6 @@
 # ReorientExpress
 
-TReorientExpress is a program to create, test and apply models to predict the 5'-to-3' orientation of long-reads from cDNA sequencing with Nanopore or PacBio using deep neural networks.
+ReorientExpress is a program to create, test and apply models to predict the 5'-to-3' orientation of long-reads from cDNA sequencing with Nanopore or PacBio using deep neural networks for samples without a genome or a transcriptome reference.
 
 ----------------------------
 # Table of Contents
@@ -16,12 +16,12 @@ TReorientExpress is a program to create, test and apply models to predict the 5'
 # Overview
 ----------------------------
 
-ReorientExpress is a tool to predict the orientation of cDNA reads from error-prone long-read sequencing technologies. It was developed with the aim to orientate nanopore long-reads from unstranded cDNA libraries without the need of a genome or transcriptome reference, but it is applicable to any set of long-reads. It builds kmer-based models using Deep Neural Networks using as training input a transcriptome annotation or any other fasta/fasq file for which the sequences orientation is known. 
-The software can work with experimental data, annotation data and also with mapped reads providing the corresponding PAF file. 
+ReorientExpress is a tool to predict the orientation of cDNA reads from error-prone long-read sequencing technologies. It was developed with the aim to orientate nanopore long-reads from unstranded cDNA libraries without the need of a genome or transcriptome reference, but it is applicable to any set of long-reads. ReorientExpress implements two Deep Neural Network models: a Multi-Layer Perceptron (MLP) and a Convolutional Neural Network (CNN), and it uses as training input a transcriptome annotation from any species or any other fasta/fasq file of RNA/cDNA sequences for which the orientation is known. 
+Training or testing data can thus be experimental data, annotation data or also mapped reads (providing the corresponding PAF file). 
 ReorientExpress has three main utilities:
 - Training a model.
 - Testing a model.
-- Using a model to orient de input sequences.
+- Using a model to orientate input sequences.
 
 
 ----------------------------
