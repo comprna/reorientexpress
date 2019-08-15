@@ -18,10 +18,14 @@ ReorientExpress is a program to create, test and apply models to predict the 5'-
 
 ReorientExpress is a tool to predict the orientation of cDNA reads from error-prone long-read sequencing technologies. It was developed with the aim to orientate nanopore long-reads from unstranded cDNA libraries without the need of a genome or transcriptome reference, but it is applicable to any set of long-reads. ReorientExpress implements two Deep Neural Network models: a Multi-Layer Perceptron (MLP) and a Convolutional Neural Network (CNN), and it uses as training input a transcriptome annotation from any species or any other fasta/fasq file of RNA/cDNA sequences for which the orientation is known. 
 Training or testing data can thus be experimental data, annotation data or also mapped reads (providing the corresponding PAF file). 
-ReorientExpress has three main utilities:
+ReorientExpress has three main modes:
 - Training a model.
 - Testing a model.
 - Using a model to orientate input sequences.
+
+These are implemented in three options: train, test and predict. In train mode, the input data is randomly split into three subsets: training, validation and test, with relative proportions of 0.75, 0.125 and 0.125, respectively. The training set is used to train the weights of the DNN model, the validation set is used to optimize the weights during the training process, and the test set has never been seen for training and is only used at the end to evaluate the accuracy of the model.
+
+  
 
 
 ----------------------------
@@ -112,7 +116,13 @@ The different options available are:
 # Inputs and Outputs
 ----------------------------
 
-All the input sequence files can be in fasta or fastq format. They can also be compressed in gz format. 
+All the input sequence files can be in fasta or fastq format. They can also be compressed in gz format.
+
+Input sequences can be of three different types, which we call experimental, annotation or mapped, which can be in FASTA or FASTQ formats, either compressed (in .gz format) or uncompressed. 
+
+* Experimental data refers to any kind of long-read data for which the orientation is known, such as direct RNA-seq, and reads are considered to be given in the 5’-to-3’ orientation. 
+* Annotation data refers to the transcript sequences from a reference annotation, such as the human transcriptome reference. It also considers all the sequences to be in the right 5’-to-3’ orientation. Annotation data can also include the transcript type, such as protein coding, processed transcript, etc. 
+* Mapped data refers to sequencing data, usually cDNA, whose orientation has been annotated by an independent method, e.g. by mapping the reads to a reference. In this case, a PAF file for the mapping, together with the FASTA/FASTQ file, is required.
 
 ### Examples of possible inputs:
 
@@ -133,6 +143,7 @@ $)/*+7B:314:3.,/.6C;4.*'+69-.14:221'%&#"+)'$$%*)'$%&&)*''(+"$&$%)1*.:/0:7522222/
 "*+$$$$$%$$#0:*'&%&'+#$&$$"</pre>
 
 #### Annotation
+
 <pre>
 >ENSMUST00000193812.1|ENSMUSG00000102693.1|OTTMUSG00000049935.1|OTTMUST00000127109.1|4933401J01Rik-201|4933401J01Rik|1070|TEC|
 AAGGAAAGAGGATAACACTTGAAATGTAAATAAAGAAAATACCTAATAAAAATAAATAAA
@@ -145,6 +156,7 @@ ACTTTTGTGGATCATCTTGCCAGCCTGTAGTGCAACCATCTCTAATCCACCACCATGAAG
 GGAACTGTGATAATTCACTGGGCTTTTTCTGTGCAAGATGAAAAAAAGCCAGGTGAGGCT
 GATTTATGAGTAAGGGATGTGCATTCCTAACTCAAAAATCTGAAATTTGAAATGCCGCCC
 </pre>
+
 #### Mapped
 
 Takes a file with the same format as experimental and also a PAF file with the following format:
