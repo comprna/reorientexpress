@@ -34,7 +34,7 @@ if __name__ == '__main__':
 		help = 'Set true to use a model to make predictions')
 	parser.add_argument('-data','--d', action = 'store', type = str, required = True, default = False,
 		help = 'The path to the input data. Must be either fasta or fastq. Can be compressed in gz.')
-	parser.add_argument('-source', '--s', action = 'store', type = str, required = True, choices = ['annotation','experimental','mapped'],
+	parser.add_argument('-source', '--s', action = 'store', type = str, required = True, choices = ['annotation','experimental','mapped', 'csv'],
 		help = 'The source of the data. Must be either \'experimental\', \' annotation\' or \'mapped\'. Choose experimental for experiments like RNA-direct, annotation for transcriptomes and mapped for mapped cDNA reads. Mapped reads require a paf file to know the orientation.')
 	parser.add_argument('-format', '--f', action = 'store', type = str, choices = ['fasta', 'fastq', 'auto'], default = 'auto',
 		help = 'The format of the input data. Auto by deafult. Change only if inconsistencies in the name.')
@@ -600,7 +600,9 @@ def make_predictions(model, kind_of_data, path_data, n_reads, path_paf, trimming
 		sequences = read_annotation_data(path = path_data, trimming = trimming, n_reads = n_reads, format_file = options.f)
 	elif kind_of_data == 'mapped':
 		sequences = read_mapped_data(path = path_data, trimming = trimming, n_reads = n_reads, format_file = options.f)
-	data, labels = prepare_data(sequences, 'unknown', full_counting, ks, False, path_paf, one_hot = one_hot)
+	elif kind_of_data == 'csv':
+		sequences = pandas.read_csv(path_data, index_col = 0, squeeze = True, nrows = n_reads)
+	data, labels = prepare_data(sequences, 'unknown', full_counting, ks, False, path_paf, one_hot = one_hot, ensure_all_kmers = True)
 	predictions = model.predict(data.values)
 	data = pandas.DataFrame(labels)
 	data['predictions'] = predictions
@@ -695,8 +697,9 @@ def analyze_clusters(path, model=False, csv=False):
 
 
 def analyze_clustersv2(path, model=False, csv=False):
-	"
-	"
+	"""
+	placeholder
+	"""
 	if model:
 		model = load_model(model)
 	else:
