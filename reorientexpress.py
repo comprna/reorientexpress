@@ -695,30 +695,44 @@ def analyze_clusters(path, model=False, csv=False):
 			lengths.append(len(predictons))
 	return results, lengths
 
+def analyze_clustersv2(path_clusters = '/Users/angelruiz/Desktop/clusters/clusters/hs/final_clusters.csv',
+					   path_prediction = '/Users/angelruiz/Downloads/predictions_cDNA_human_Hs_transcriptome_cnn.csv',
+					   paf_file = '/Users/angelruiz/Desktop/RE_data/cdna_human_no_secondary_mapq_60_unique.paf',
+					   species = 'hs', prediction_id_col = 0, prediction_prediction_col = 4):
+	
+    clusters = pandas.read_table(path_clusters, names = ['cluster', 'id'], index_col=1)
+    clusters.index = clusters.index.str[0:36]
+    predictions = pandas.read_csv(path_prediction, usecols=[prediction_id_col, prediction_prediction_col], names = ['id', 'prediction'], index_col=[0], skiprows=1)
+    predictions = predictions.prediction.round().replace([1.0, 0], ['-', '+'])
+    labels = pandas.read_table(paf_file, usecols = [0,4], index_col = 0, header = None, names = ['id', 'strand'])
 
-def analyze_clustersv2(path, model=False, csv=False):
-	"""
-	placeholder
-	"""
-	if model:
-		model = load_model(model)
-	else:
-		prediction_csv = pandas.read_csv(csv, index_col = 0, usecols=['id', 'strand', 'predictions'])
-	results = []
-	lengths = []
-	for file in os.listdir(path):
-		if not file.startswith('.') and file.endswith('.fq'):
-			full_path = path+'/'+file
-			sequences = read_cluster_data(full_path)
-			try:
-				predictons = model.predict(data.values).round()
-			except:
-				data, labels = prepare_data(sequences, 'unknown', True, 5, False, False,True)
-				predictons = model.predict(data.values).round()
-			agreement = stats.mode(predictons)[1][0][0]/len(predictons)
-			results.append(agreement)
-			lengths.append(len(predictons))
-	return results, lengths
+    data  = clusters.join(predictions).join(labels)
+    data['ncorrect'] = data['prediction']==data['strand']
+
+    cluster_analysis =  pandas.DataFrame(data.groupby('cluster')['ncorrect'].sum())
+    cluster_analysis['size'] = data.groupby('cluster').size()
+
+    cluster_analysis['per_correct'] = cluster_analysis['ncorrect']/cluster_analysis['size']
+    cluster_analysis['correct_cluster'] = cluster_analysis['ncorrect']>=cluster_analysis['size']//2
+
+    cluster_analysis[cluster_analysis['size'] > 2]['per_correct'].hist()
+    plt.title('Accuracy per cluster (Size > 2)')
+    plt.savefig(species+'_acc_clusters_gt_2.png')
+    plt.close('all')
+
+    cluster_analysis[cluster_analysis['size'] > 1]['per_correct'].hist()
+    plt.title('Accuracy per cluster (Size > 1)')
+    plt.savefig(species+'_acc_clusters_gt_1.png')
+    plt.close('all')
+
+    RE_lazy = labels[labels['strand'] == '+'].size/labels.size
+    RE_correct = sum(cluster_analysis['ncorrect'])/sum(cluster_analysis['size'])
+    RE_correct_voting = sum(cluster_analysis['size'] * cluster_analysis.correct_cluster)/sum(cluster_analysis['size'])
+
+    print('Lazy model accuracy: ', RE_lazy)
+    print('RE accuracy:', RE_correct)
+    print('RE plus clustering accuracy:', RE_correct_voting)
+    return(0)
 
 if __name__ == '__main__':
 	time0 = time.time() 
