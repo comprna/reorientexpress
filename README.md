@@ -195,11 +195,12 @@ Depending on the chosen pipeline, the output can be:
 ----------------------------
 # Usage example
 ----------------------------
+**Note:** The below commands are for MLP model. Similar commands can be used for CNN model will the replacement of *reorientexpress.py* with *reoreintexpress-cnn.py*
 
 To train a model:
 
 ```
-reorientexpress -train -data path_to_data -source annotation --v -output my_model
+reorientexpress.py -train -data path_to_data -source annotation --v -output my_model
 ```
 
 This trains a model with the data stored in path_to_data, which is an annotation file, suchs as a transcriptome and outputs a file called my_model.model which can be later used to make predictions. Prints relevant information.
@@ -207,7 +208,7 @@ This trains a model with the data stored in path_to_data, which is an annotation
 To make predictions:
 
 ```
-reorientexpress -predict -data path_to_data -source experimental -model path_to_model -output my_predictions
+reorientexpress.py -predict -data path_to_data -source experimental -model path_to_model -output my_predictions
 ```
 
 This takes the experimental data stored in path_to_data and the model stored in path_to_model and predicts the 5'-to-3' orientation of reads, i.e. converts to forward reads the reads that the model predicts are reverse complemented, printing the results in my_predictions.csv. 
