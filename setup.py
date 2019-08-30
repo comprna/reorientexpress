@@ -3,7 +3,7 @@ import setuptools
 setuptools.setup(
     name = 'reorientexpress',
     version = '0.105',
-    scripts = ['reorientexpress.py'],
+    scripts = ['reorientexpress.py', 'reorientexpress-cnn.py'],
     install_requires=[
         'numpy>=1.15.3',
         'Keras>=2.2.4',
