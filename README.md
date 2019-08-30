@@ -57,7 +57,7 @@ Once the package is installed it can be used as an independent program. Reorient
 * -test: takes a model and a labeled input and estimate the accuracy of the model using the labeled input data.
 * -predict: takes a model and an input and outputs all the sequences in the predicted 5'-to3' orientation. It also gives a certainty score per input sequence.
 
-The different options available are:
+The different options available for MLP (reorientexpress.py) are:
 
 * **-h, --help**:             Shows a help message with all the options.
 
@@ -111,6 +111,64 @@ The different options available are:
                         Corresponding extensions will be added.
 
 *  **-model M, --m M**:       The model to test or to predict with.
+
+The different option available for CNN (reoreintexpress-cnn.py) are:
+
+
+* **-h, --help**:             Shows a help message with all the options.
+
+*  **-train**:                Set true to train a model.
+
+*  **-test**:                 Set true to test a model.
+
+*  **-predict**:              Set true to use a model to make predictions
+
+*  **-data D, --d D**:        The path to the input data. Must be either fasta or
+                        fastq. Can be compressed in gz format. Mandatory.
+                        
+*  **-source {annotation,experimental,mapped}, --s {annotation,experimental,mapped}**:
+                        The source of the data. Must be either 'experimental',
+                        'annotation' or 'mapped'. Choose experimental for
+                        experiments like RNA-direct, annotation for
+                        transcriptomes or other references and mapped for reads mapped 
+                        to a reference transcriptome.
+                        Mapped reads must be in PAF format to extract the orientation. 
+                        Mandatory.
+                        
+*  **-format {fasta,fastq,auto}, --f {fasta,fastq,auto}**:
+                        The format of the input data. Auto by deafult. Change
+                        only if inconsistencies in the name.
+                        
+*  **-annotation A, --a A**:  Path to the PAF file if a mapped training set is used.
+                        
+*  **-use_all_annotation, -aa**:
+                        Uses all the reads from the annotation, instead of only keeping
+                        protein_coding, lincRNA, processed_transcript, antisense, and retained_intron. 
+                        Use it also if the fasta has unconventional format and gives errors.
+                        
+*  **-win_size W, --w W**:       Window size for spliting the sequence.
+ 
+*  **-step_size, --step**:       Overlapping size on the the sliding window.
+                        
+*  **-reads R, --r R**:       Number of reads to use from the dataset.
+
+*  **-trimming T, --t T**:    Number of nucleotides to trimm at each side. 0 by default.
+
+*  **-reverse_all**:          Reverse-complement all input sequences to double up the training input, 
+                        instead of reverse-complementing just a random half of the input sequences, 
+                        which is the default. 
+                        
+*  **-verbose, --v**:         Flag to print detailed information about the 
+                        training process.
+                        
+*  **-epochs E, --e E**:      Number of epochs to train the model.
+
+*  **-output O, --o O**:      Where to store the outputs. using "--train" outputs a
+                        model, while using "-predict" outputs a csv.
+                        Corresponding extensions will be added.
+
+*  **-model M, --m M**:       The model to test or to predict with.
+
 
 ----------------------------
 # Inputs and Outputs
