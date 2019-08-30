@@ -187,7 +187,7 @@ Depending on the chosen pipeline, the output can be:
 * Predicting: outputs a csv file with all the reads in the predicted 5'-to-3' orientation. It contains three columns: the predicted 5'-to-3' sequence (ForwardedSequence) and the model Score and the read orientation. See below an example:
 
 | Index  | ForwardSequence  | Score  | orientation |
-|---|---|---|
+|---|---|---|---|
 |  0 | ATGTTGAATAGTTCAAGAAAATATGCTTGTCGTTCCCTATTCAGACAAGCGAACGTCTCA  |  0.8915960788726807 | 0 |
 |  1 | TTGAGGAGTGATAACAAGGAAAGCCCAAGTGCAAGACAACCACTAGATAGGCTACAACTA  | 0.9746999740600586  | 1 |
 |  2 | AAGGCCACCATTGCTCTATTGTTGCTAAGTGGTGGGACGTATGCCTATTTATCAAGAAAA  |  0.9779879450798035 | 0 |
