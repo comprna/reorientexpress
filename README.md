@@ -184,13 +184,15 @@ You can read more about the paf file format [here](https://github.com/lh3/minias
 Depending on the chosen pipeline, the output can be:
 * Training: a keras model object, from the class keras.engine.sequential.Sequential (https://keras.io). It is saved as a binary file that be loaded later.
 * Testing: there is no file output. Only the results of the accuracy evaluation displayed on the terminal.
-* Predicting: outputs a csv file with all the reads in the predicted 5'-to-3' orientation. It contains three columns: the index, the predicted 5'-to-3' sequence (ForwardedSequence) and the model Score. See below an example:
+* Predicting: outputs a csv file with all the reads in the predicted 5'-to-3' orientation. It contains three columns: the predicted 5'-to-3' sequence (ForwardedSequence) and the model Score and the read orientation. See below an example:
 
-| Index  | ForwardSequence  | Score  |
+| Index  | ForwardSequence  | Score  | orientation |
 |---|---|---|
-|  0 | ATGTTGAATAGTTCAAGAAAATATGCTTGTCGTTCCCTATTCAGACAAGCGAACGTCTCA  |  0.8915960788726807 |
-|  1 | TTGAGGAGTGATAACAAGGAAAGCCCAAGTGCAAGACAACCACTAGATAGGCTACAACTA  | 0.9746999740600586  |
-|  2 | AAGGCCACCATTGCTCTATTGTTGCTAAGTGGTGGGACGTATGCCTATTTATCAAGAAAA  |  0.9779879450798035 |
+|  0 | ATGTTGAATAGTTCAAGAAAATATGCTTGTCGTTCCCTATTCAGACAAGCGAACGTCTCA  |  0.8915960788726807 | 0 |
+|  1 | TTGAGGAGTGATAACAAGGAAAGCCCAAGTGCAAGACAACCACTAGATAGGCTACAACTA  | 0.9746999740600586  | 1 |
+|  2 | AAGGCCACCATTGCTCTATTGTTGCTAAGTGGTGGGACGTATGCCTATTTATCAAGAAAA  |  0.9779879450798035 | 0 |
+
+*Note*: '0' orientation represents '+' and '1' orientation represents '-'. However, the '-' reads are resevse complemented and provided in the 'ForwardSequence' column.
 
 ----------------------------
 # Usage example
@@ -222,7 +224,7 @@ To make predictions:
 reorientexpress.py -predict -data path_to_data -source experimental -model path_to_model -output my_predictions
 ```
 
-This takes the experimental data stored in path_to_data and the model stored in path_to_model and predicts the 5'-to-3' orientation of reads, i.e. converts to forward reads the reads that the model predicts are reverse complemented, printing the results in my_predictions.csv. 
+This takes the experimental data stored in path_to_data and the model stored in path_to_model and predicts the 5'-to-3' orientation of reads, i.e. converts to forward reads the reads that the model predicts are reverse complemented, printing the results in my_predictions.csv. The output format is same as provided in the 'Examples of possible outputs section above'
 
 In the saved_models/ folder we provide a model trained with the human transcriptome annotation and a model trained with the Saccharomyces cerevisiae transcriptome annoation. They can be directly used with the "-model" flag.
 
