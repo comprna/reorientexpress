@@ -205,6 +205,17 @@ reorientexpress.py -train -data path_to_data -source annotation --v -output my_m
 
 This trains a model with the data stored in path_to_data, which is an annotation file, suchs as a transcriptome and outputs a file called my_model.model which can be later used to make predictions. Prints relevant information.
 
+Example on test_case provided in the repo:
+
+```
+reorientexpress.py -train -data ./test_case/annotation/gencode.vM19.transcripts_50k.fa -source annotation --v -output my_model
+```
+or 
+
+```
+reorientexpress-cnn.py -train -data ./test_case/annotation/gencode.vM19.transcripts_50k.fa -source annotation --v -output my_model
+```
+
 To make predictions:
 
 ```
