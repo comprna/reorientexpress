@@ -226,4 +226,16 @@ This takes the experimental data stored in path_to_data and the model stored in 
 
 In the saved_models/ folder we provide a model trained with the human transcriptome annotation and a model trained with the Saccharomyces cerevisiae transcriptome annoation. They can be directly used with the "-model" flag.
 
+Example on test_case provided in the repo:
+
+```
+reorientexpress.py -predict -data ./test_case/experimental/Hopkins_Run1_20171011_1D.pass.dedup_60_unique_50k.fastq -model ./saved_models/Hs_transcriptome_mlp.model -source experimental -output my_predictions
+```
+or 
+
+```
+reorientexpress-cnn.py -predict -data ./test_case/experimental/Hopkins_Run1_20171011_1D.pass.dedup_60_unique_50k.fastq -model ./saved_models/Hs_transcriptome_mlp.model -source experimental -output my_predictions
+```
+
+
 
