@@ -293,16 +293,18 @@ def read_annotation_data(path, format_file = 'auto', n_reads = 50000, trimming =
 		else:
 			gzip_encoded = False
 	if gzip_encoded:
+		file_c = gzip.open(path, 'rb')
 		file = gzip.open(path, 'rb')
 	else:
+		file_c = open(path, 'r')
 		file = open(path, 'r')
 	if format_file == 'auto':
 		if gzip_encoded:
-			line = file.readline()
+			line = file_c.readline()
 			line = line.decode()
 			marker = line[0]
 		else:
-			line = file.readline()
+			line = file_c.readline()
 			marker = line[0]
 		if marker == '@':
 			format_file = 'fastq'
@@ -326,6 +328,7 @@ def read_annotation_data(path, format_file = 'auto', n_reads = 50000, trimming =
 	kept = 0
 	keep_next = False
 	for line in file:
+		print(line, keep_next)
 		if kept >= n_reads:
 			break
 		if gzip_encoded:
@@ -338,7 +341,10 @@ def read_annotation_data(path, format_file = 'auto', n_reads = 50000, trimming =
 					read_type = sline[-2]
 				elif separator == ' ':
 					sline = line.split(' ')
-					read_type = sline[-1].split(':')[1]
+					if ':' in sline[-1]:
+						read_type = sline[-1].split(':')[1]
+					else:
+						use_all_annotation = True
 			if use_all_annotation or read_type in ['antisense','lincRNA','processed_transcript', 'protein_coding', 'retained_intron']:
 				if keep_next:
 					kept += 1
@@ -353,6 +359,10 @@ def read_annotation_data(path, format_file = 'auto', n_reads = 50000, trimming =
 		else:
 			if keep_next:
 				sequence += line.strip()
+	if trimming:
+		sequences.append(sequence[trimming:-trimming])
+	else:
+		sequences.append(sequence)
 	sequences = pandas.Series(sequences)
 	return sequences
 
@@ -702,6 +712,8 @@ def analyze_clustersv2(path_clusters = '/Users/angelruiz/Desktop/clusters/cluste
 	
     clusters = pandas.read_table(path_clusters, names = ['cluster', 'id'], index_col=1)
     clusters.index = clusters.index.str[0:36]
+    clusters.index = clusters.index.str[0:36] # change this to capture the identifier
+    #clusters.index = clusters.index.str.split('_').str[0] 
     predictions = pandas.read_csv(path_prediction, usecols=[prediction_id_col, prediction_prediction_col], names = ['id', 'prediction'], index_col=[0], skiprows=1)
     predictions = predictions.prediction.round().replace([1.0, 0], ['-', '+'])
     labels = pandas.read_table(paf_file, usecols = [0,4], index_col = 0, header = None, names = ['id', 'strand'])
