@@ -47,6 +47,8 @@ pip3 install reorientexpress
 ```
 Once the package is installed, ReorientExpress can be used from the command line as any other program.
 
+If you want to ensure you have the latest version, we recommend cloning the repository instead, althought you will have to manage the dependencies yourself.
+
 ----------------------------
 # Commands and options
 ----------------------------
