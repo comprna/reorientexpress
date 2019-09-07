@@ -57,7 +57,7 @@ Once the package is installed it can be used as an independent program. Reorient
 * -test: takes a model and a labeled input and estimate the accuracy of the model using the labeled input data.
 * -predict: takes a model and an input and outputs all the sequences in the predicted 5'-to3' orientation. It also gives a certainty score per input sequence.
 
-The different options available are:
+The different options available for MLP (reorientexpress.py) are:
 
 * **-h, --help**:             Shows a help message with all the options.
 
@@ -111,6 +111,64 @@ The different options available are:
                         Corresponding extensions will be added.
 
 *  **-model M, --m M**:       The model to test or to predict with.
+
+The different option available for CNN (reoreintexpress-cnn.py) are:
+
+
+* **-h, --help**:             Shows a help message with all the options.
+
+*  **-train**:                Set true to train a model.
+
+*  **-test**:                 Set true to test a model.
+
+*  **-predict**:              Set true to use a model to make predictions
+
+*  **-data D, --d D**:        The path to the input data. Must be either fasta or
+                        fastq. Can be compressed in gz format. Mandatory.
+                        
+*  **-source {annotation,experimental,mapped}, --s {annotation,experimental,mapped}**:
+                        The source of the data. Must be either 'experimental',
+                        'annotation' or 'mapped'. Choose experimental for
+                        experiments like RNA-direct, annotation for
+                        transcriptomes or other references and mapped for reads mapped 
+                        to a reference transcriptome.
+                        Mapped reads must be in PAF format to extract the orientation. 
+                        Mandatory.
+                        
+*  **-format {fasta,fastq,auto}, --f {fasta,fastq,auto}**:
+                        The format of the input data. Auto by deafult. Change
+                        only if inconsistencies in the name.
+                        
+*  **-annotation A, --a A**:  Path to the PAF file if a mapped training set is used.
+                        
+*  **-use_all_annotation, -aa**:
+                        Uses all the reads from the annotation, instead of only keeping
+                        protein_coding, lincRNA, processed_transcript, antisense, and retained_intron. 
+                        Use it also if the fasta has unconventional format and gives errors.
+                        
+*  **-win_size W, --w W**:       Window size for spliting the sequence.
+ 
+*  **-step_size, --step**:       Overlapping size on the the sliding window.
+                        
+*  **-reads R, --r R**:       Number of reads to use from the dataset.
+
+*  **-trimming T, --t T**:    Number of nucleotides to trimm at each side. 0 by default.
+
+*  **-reverse_all**:          Reverse-complement all input sequences to double up the training input, 
+                        instead of reverse-complementing just a random half of the input sequences, 
+                        which is the default. 
+                        
+*  **-verbose, --v**:         Flag to print detailed information about the 
+                        training process.
+                        
+*  **-epochs E, --e E**:      Number of epochs to train the model.
+
+*  **-output O, --o O**:      Where to store the outputs. using "--train" outputs a
+                        model, while using "-predict" outputs a csv.
+                        Corresponding extensions will be added.
+
+*  **-model M, --m M**:       The model to test or to predict with.
+
 
 ----------------------------
 # Inputs and Outputs
@@ -184,34 +242,80 @@ You can read more about the paf file format [here](https://github.com/lh3/minias
 Depending on the chosen pipeline, the output can be:
 * Training: a keras model object, from the class keras.engine.sequential.Sequential (https://keras.io). It is saved as a binary file that be loaded later.
 * Testing: there is no file output. Only the results of the accuracy evaluation displayed on the terminal.
-* Predicting: outputs a csv file with all the reads in the predicted 5'-to-3' orientation. It contains three columns: the index, the predicted 5'-to-3' sequence (ForwardedSequence) and the model Score. See below an example:
+* Predicting: outputs a csv file with all the reads in the predicted 5'-to-3' orientation. It contains three columns: the predicted 5'-to-3' sequence (ForwardedSequence) and the model Score and the read orientation. See below an example:
 
-| Index  | ForwardSequence  | Score  |
-|---|---|---|
-|  0 | ATGTTGAATAGTTCAAGAAAATATGCTTGTCGTTCCCTATTCAGACAAGCGAACGTCTCA  |  0.8915960788726807 |
-|  1 | TTGAGGAGTGATAACAAGGAAAGCCCAAGTGCAAGACAACCACTAGATAGGCTACAACTA  | 0.9746999740600586  |
-|  2 | AAGGCCACCATTGCTCTATTGTTGCTAAGTGGTGGGACGTATGCCTATTTATCAAGAAAA  |  0.9779879450798035 |
+| Index  | ForwardSequence  | Score  | orientation |
+|---|---|---|---|
+|  0 | ATGTTGAATAGTTCAAGAAAATATGCTTGTCGTTCCCTATTCAGACAAGCGAACGTCTCA  |  0.8915960788726807 | 0 |
+|  1 | TTGAGGAGTGATAACAAGGAAAGCCCAAGTGCAAGACAACCACTAGATAGGCTACAACTA  | 0.9746999740600586  | 1 |
+|  2 | AAGGCCACCATTGCTCTATTGTTGCTAAGTGGTGGGACGTATGCCTATTTATCAAGAAAA  |  0.9779879450798035 | 0 |
+
+*Note*: '0' orientation represents '+' and '1' orientation represents '-'. However, the '-' reads are resevse complemented and provided in the 'ForwardSequence' column.
 
 ----------------------------
 # Usage example
 ----------------------------
+**Note:** The below commands are for MLP model. Similar commands can be used for CNN model will the replacement of *reorientexpress.py* with *reoreintexpress-cnn.py*
 
 To train a model:
 
 ```
-reorientexpress -train -data path_to_data -source annotation --v -output my_model
+reorientexpress.py -train -data path_to_data -source annotation --v -output my_model
 ```
 
 This trains a model with the data stored in path_to_data, which is an annotation file, suchs as a transcriptome and outputs a file called my_model.model which can be later used to make predictions. Prints relevant information.
 
+Example on test_case provided in the repo:
+
+```
+reorientexpress.py -train -data ./test_case/annotation/gencode.vM19.transcripts_50k.fa -source annotation --v -output my_model
+```
+or 
+
+```
+reorientexpress-cnn.py -train -data ./test_case/annotation/gencode.vM19.transcripts_50k.fa -source annotation --v -output my_model
+```
+
 To make predictions:
 
 ```
-reorientexpress -predict -data path_to_data -source experimental -model path_to_model -output my_predictions
+reorientexpress.py -predict -data path_to_data -source experimental -model path_to_model -output my_predictions
 ```
 
-This takes the experimental data stored in path_to_data and the model stored in path_to_model and predicts the 5'-to-3' orientation of reads, i.e. converts to forward reads the reads that the model predicts are reverse complemented, printing the results in my_predictions.csv. 
+This takes the experimental data stored in path_to_data and the model stored in path_to_model and predicts the 5'-to-3' orientation of reads, i.e. converts to forward reads the reads that the model predicts are reverse complemented, printing the results in my_predictions.csv. The output format is same as provided in the 'Examples of possible outputs section above'
 
 In the saved_models/ folder we provide a model trained with the human transcriptome annotation and a model trained with the Saccharomyces cerevisiae transcriptome annoation. They can be directly used with the "-model" flag.
+
+Example on test_case provided in the repo:
+
+```
+reorientexpress.py -predict -data ./test_case/experimental/Hopkins_Run1_20171011_1D.pass.dedup_60_unique_50k.fastq -model ./saved_models/Hs_transcriptome_mlp.model -source experimental -output my_predictions
+```
+or 
+
+```
+reorientexpress-cnn.py -predict -data ./test_case/experimental/Hopkins_Run1_20171011_1D.pass.dedup_60_unique_50k.fastq -model ./saved_models/Hs_transcriptome_mlp.model -source experimental -output my_predictions
+```
+
+To test the accuracy of the model:
+
+```
+reorientexpress.py -test -data path_to_data -annotation path_of_paf_file -source mapped -model path_to_model 
+```
+Example on test_case provided in the repo:
+
+```
+reorientexpress.py -test -data ./test_case/mapped/Hopkins_Run1_20171011_1D.pass.dedup_60_unique_2000.fastq -annotation ./test_case/mapped/cdna_human_no_secondary_mapq_60_unique_2000.paf -model ./saved_models/Hs_transcriptome_mlp.model -source mapped
+```
+
+or 
+
+```
+reorientexpress-cnn.py -test -data ./test_case/mapped/Hopkins_Run1_20171011_1D.pass.dedup_60_unique_2000.fastq -annotation ./test_case/mapped/cdna_human_no_secondary_mapq_60_unique_2000.paf -model ./saved_models/Hs_transcriptome_mlp.model -source mapped
+```
+
+The ouput accuracy (precision, recall, F1-score, support) will be displayed on the screen. 
+
+
 
 
