@@ -9,8 +9,7 @@ Then, provide all the necessary parameters and files.
 Type -h for a detailed list of the parameters. 
 
 """
-import os
-import itertools
+import os, itertools, re
 import pandas, math, gzip, numpy, argparse, time
 from keras import optimizers
 from keras.layers import Dense, Dropout, Activation
@@ -97,7 +96,7 @@ def sequences_to_kmers(seq, ks, only_last_kmer = False, full_counting = False, o
 		for window in range(min(windows, k)):
 			for i in range(len(seq)//k):
 				subseq = seq[i*k+window: i*k+k+window]
-				if 'N' in subseq: # Ensures we discard ambigous nucleotide sequences.
+				if not re.match('^[ACTG]+$', subseq): # Ensures we discard ambigous nucleotide sequences.
 					continue
 				if len(subseq) < k:
 					continue
@@ -113,6 +112,15 @@ def sequences_to_kmers(seq, ks, only_last_kmer = False, full_counting = False, o
 						kmers[subseq] =  1/(length-k+1)
 
 	return pandas.Series(kmers)
+
+def check_valid_nucleotides(seq):
+	"""
+	Used to clean sequences with non-standard nucleotide symbols.
+	"""
+	if re.match('^[ACTG]+$', seq):
+		return True
+	else:
+		return False
 
 def generate_sets(data, labels, norm = False, do_not_split = False, no_test = False, mn_reads = int(10e10)):
 	"""
@@ -162,10 +170,7 @@ def prepare_data(sequences, order = 'forwarded', full_counting = True, ks = 5, d
 	- ensure_all_kmers: if True, it makes sure all the mers are calculated. Use only for small files if some the prediction fails.
 	"""
 	print('Preparing the data')
-	if drop_duplicates: 
-		sequences = sequences[~sequences.str[:30].duplicated()]
-		sequences = sequences[~sequences.str[-30:].duplicated()]
-	sequences = sequences[~sequences.str.contains('N')]
+	sequences = sequences[sequences.apply(check_valid_nucleotides)]
 	if order == 'forwarded':
 		print('Assuming the data provided is all in forward')
 		if reverse_all:
@@ -308,19 +313,18 @@ def read_annotation_data(path, format_file = 'auto', n_reads = 50000, trimming =
 			marker = line[0]
 		if marker == '@':
 			format_file = 'fastq'
+			use_all_annotation = True
 		elif marker == '>':
 			if len(line.split('|')) > 2:
 				separator = '|'
 			elif len(line.split(' ')) > 2:
 				separator = ' '
 			else:
-				print(line)
 				print('The file has not the correct format. All the sequence will be kept to avoid errors.')
 				use_all_annotation = True
 			format_file = 'fasta'
 		else:
 			raise NameError('Incorrect format')
-		print(separator)
 	if format_file == 'fastq':
 		n = 4
 	elif format_file == 'fasta':
@@ -328,7 +332,6 @@ def read_annotation_data(path, format_file = 'auto', n_reads = 50000, trimming =
 	kept = 0
 	keep_next = False
 	for line in file:
-		print(line, keep_next)
 		if kept >= n_reads:
 			break
 		if gzip_encoded:
