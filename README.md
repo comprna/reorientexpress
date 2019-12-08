@@ -1,6 +1,6 @@
 # ReorientExpress [![DOI](https://zenodo.org/badge/162119902.svg)](https://zenodo.org/badge/latestdoi/162119902)
 
-ReorientExpress is a program to create, test and apply models to predict the 5'-to-3' orientation of long-reads from cDNA sequencing with Nanopore or PacBio using deep neural networks for samples without a genome or a transcriptome reference.
+ReorientExpress is a program to create, test and apply models to predict the 5'-to-3' orientation of long-reads from cDNA sequencing with Nanopore or PacBio using deep neural networks for samples without a genome or a transcriptome reference. For details on the benchmarkings and analyses performed with this program, please see our publication: https://www.ncbi.nlm.nih.gov/pubmed/31783882
 
 ----------------------------
 # Table of Contents
@@ -317,6 +317,13 @@ reorientexpress-cnn.py -test -data ./test_case/mapped/Hopkins_Run1_20171011_1D.p
 ```
 
 The ouput accuracy (precision, recall, F1-score, support) will be displayed on the screen. 
+
+----------------------------
+# How to cite ReorientExpress
+----------------------------
+Ruiz-Reche A, Srivastava A, Indi JA, de la Rubia I, Eyras E. ReorientExpress: 
+reference-free orientation of nanopore cDNA reads with deep learning. Genome
+Biol. 2019 Nov 29;20(1):260. doi: 10.1186/s13059-019-1884-z. https://www.ncbi.nlm.nih.gov/pubmed/31783882
 
 
 
