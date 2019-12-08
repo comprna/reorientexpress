@@ -11,7 +11,7 @@ ReorientExpress is a program to create, test and apply models to predict the 5'-
    * [Commands and options](#commands-and-options)
    * [Inputs and Outputs](#inputs-and-outputs)
    * [Usage example](#usage-example)
-   
+   * [How to cite ReorientExpress](#how-to-cite-ReorientExpress)   
 ----------------------------
 # Overview
 ----------------------------
