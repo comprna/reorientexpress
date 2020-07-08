@@ -252,7 +252,7 @@ Depending on the chosen pipeline, the output can be:
 |  1 | TTGAGGAGTGATAACAAGGAAAGCCCAAGTGCAAGACAACCACTAGATAGGCTACAACTA  | 0.9746999740600586  | 1 |
 |  2 | AAGGCCACCATTGCTCTATTGTTGCTAAGTGGTGGGACGTATGCCTATTTATCAAGAAAA  |  0.9779879450798035 | 0 |
 
-*Note*: '0' orientation represents '+' and '1' orientation represents '-'. However, the '-' reads are resevse complemented and provided in the 'ForwardSequence' column.
+*Note*: '0' orientation represents '+' and '1' orientation represents '-'. However, the '-' reads are reverses-complemented and provided in the 'ForwardSequence' column.
 
 ----------------------------
 # Usage example
