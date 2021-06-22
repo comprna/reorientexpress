@@ -26,7 +26,8 @@ from keras.layers import Conv2D, MaxPooling2D
 from keras import backend as K
 from keras.models import load_model
 from sklearn.model_selection import train_test_split
-
+from Bio import SeqIO
+from Bio.Seq import Seq
 from sklearn.metrics import classification_report, roc_curve, precision_recall_curve
 import matplotlib.pyplot as plt
 
@@ -81,6 +82,8 @@ if __name__ == '__main__':
         help = 'Window size for spliting the sequence.')
     parser.add_argument('-step_size', '--step', action = 'store', default = 250, type = int,
         help = 'overlapping size on the the sliding window.')
+    parser.add_argument('-output_fastq', default = False, action = 'store_true', 
+        help = 'Set true to get the output in fastq format')
     options = parser.parse_args()
 
 
@@ -741,7 +744,20 @@ def test_model(model, kind_of_data, path_data, n_reads, path_paf, trimming, wind
     print('---------------------------------------------------------\n')
     if return_predictions:
         return y_pred_all["predictions_CNN"], labels
-
+    
+def outformat(path_data, data):
+    
+    c=-1
+    updated_file=[]
+    with open(path_data) as handle:
+       
+        for record in SeqIO.parse(handle, 'fastq'):
+            if (data.Orientation[c+1]==1):
+                record=record.reverse_complement(id=True,description=True)
+            c=c+1
+            updated_file.append(record)
+        SeqIO.write(updated_file, options.o+'.fastq', "fastq")
+        
 def make_predictions(model, kind_of_data, path_data, n_reads, path_paf, trimming, window_size, step_size):
     if kind_of_data == 'experimental':
         sequences = read_experimental_data(path = path_data, trimming = trimming, n_reads = n_reads, format_file = options.f)
@@ -749,7 +765,7 @@ def make_predictions(model, kind_of_data, path_data, n_reads, path_paf, trimming
         sequences = read_annotation_data(path = path_data, trimming = trimming, n_reads = n_reads, format_file = options.f)
     elif kind_of_data == 'mapped':
         sequences = read_mapped_data(path = path_data, trimming = trimming, n_reads = n_reads, format_file = options.f)
-    data, labels = prepare_data(sequences, 'unknown',  True, path_paf)
+    data, labels = prepare_data(sequences, 'unknown',  False, path_paf)
     y_pred_all=[]
     if data.shape[0]<300:
         chunk_size=1
@@ -767,7 +783,10 @@ def make_predictions(model, kind_of_data, path_data, n_reads, path_paf, trimming
     data.loc[data['predictions'] > 0.5, "seq"] = data["seq"].apply(reverse_complement)
     data.loc[data['predictions'] < 0.5, 'predictions'] = 1 - data['predictions']
     data.columns = ['ForwardSequence', 'Score', 'Orientation']
-    data.to_csv(options.o+'.csv')
+    if (kind_of_data == 'experimental'and options.output_fastq):
+        outformat(path_data,data)
+    else:
+        data.to_csv(options.o+'.csv')
 
 
 if __name__ == '__main__':
@@ -788,4 +807,4 @@ if __name__ == '__main__':
 		print('Model successfully loaded')
 		print(model.summary())
 		make_predictions(model, options.s, options.d, options.r, options.a, options.t,options.w,options.step)
-		print('Predictions saved to:', options.o+'.csv')
+		print('Predictions saved to:', options.o)

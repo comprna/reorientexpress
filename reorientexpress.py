@@ -21,49 +21,52 @@ from sklearn.utils import shuffle
 from sklearn.metrics import classification_report, roc_curve, precision_recall_curve
 import matplotlib.pyplot as plt
 from scipy import stats
-
+from Bio import SeqIO
+from Bio.Seq import Seq
 
 if __name__ == '__main__':
-	parser = argparse.ArgumentParser(description = 'Builds, test and uses models for the orientation of cDNA reads.')
-	parser.add_argument('-train', default = False, action = 'store_true', 
-		help = 'Set true to train a model.')
-	parser.add_argument('-test', default = False, action = 'store_true', 
-		help = 'Set true to test a model.')
-	parser.add_argument('-predict', default = False, action = 'store_true', 
-		help = 'Set true to use a model to make predictions')
-	parser.add_argument('-data','--d', action = 'store', type = str, required = True, default = False,
-		help = 'The path to the input data. Must be either fasta or fastq. Can be compressed in gz.')
-	parser.add_argument('-source', '--s', action = 'store', type = str, required = True, choices = ['annotation','experimental','mapped', 'csv'],
-		help = 'The source of the data. Must be either \'experimental\', \' annotation\' or \'mapped\'. Choose experimental for experiments like RNA-direct, annotation for transcriptomes and mapped for mapped cDNA reads. Mapped reads require a paf file to know the orientation.')
-	parser.add_argument('-format', '--f', action = 'store', type = str, choices = ['fasta', 'fastq', 'auto'], default = 'auto',
-		help = 'The format of the input data. Auto by deafult. Change only if inconsistencies in the name.')
-	parser.add_argument('-annotation', '--a', action = 'store', type = str, default = False,
-		help = 'Path to the paf file if a mapped training set which requires a paf reference is being used.')
-	parser.add_argument('-use_all_annotation', '-aa', action = 'store_true', default = False,
-		help = 'Uses all the reads, instead of only keeping antisense,lincRNA,processed_transcript, protein_coding, and retained_intron. Use it also if the fasta has unconventional format and gives errors.')
-	parser.add_argument('-kmers', '--k', action = 'store', type = int, required = False, default = 5,
-		help = 'The maximum length of the kmers used for training, testing and using the models.')
-	parser.add_argument('-fixedkmer', '--fk', action = 'store_true', required = False, default = False,
-		help = 'Only use the last kmer length')
-	parser.add_argument('-reads', '--r', action = 'store', type = int, default = 10e10,
-		help = 'Number of reads to read from the dataset.')
-	parser.add_argument('-trimming', '--t', action = 'store', type = int, default = False,
-		help = 'Number of nucleotides to trimm at each side. 0 by default.')
-	parser.add_argument('-verbose', '--v', action = 'store_true', default = False,
-		help = 'Whether to print detailed information about the training process.')
-	parser.add_argument('-epochs', '--e', action = 'store', default = 20, type = int,
-		help = 'Number of epochs to train the model.')
-	parser.add_argument('-output', '--o', action = 'store', default = 'output',
-		help = 'Where to store the outputs. using "--train" outputs a model, while using "-predict" outputs a csv. Corresponding extensions will be added.')
-	parser.add_argument('-model', '--m', action = 'store',
-		help = 'The model to test or to predict with.')
-	parser.add_argument('-reverse_all', '--ra', action = 'store_true', default = False,
-		help = 'All the sequences will be reversed, instead of half of them')
-	parser.add_argument('-reads_to_model', '--rm', action = 'store', type = int, default = int(10e10),
-		help = 'Number of reads to use from the read ones')
-	parser.add_argument('-one_hot', '--oh', action = 'store_true', default = False,
-		help = 'Use one hot encoding instead of kmer counting')
-	options = parser.parse_args()
+    parser = argparse.ArgumentParser(description = 'Builds, test and uses models for the orientation of cDNA reads.')
+    parser.add_argument('-train', default = False, action = 'store_true', 
+    help = 'Set true to train a model.')
+    parser.add_argument('-test', default = False, action = 'store_true', 
+    help = 'Set true to test a model.')
+    parser.add_argument('-predict', default = False, action = 'store_true', 
+    help = 'Set true to use a model to make predictions')
+    parser.add_argument('-output_fastq', default = False, action = 'store_true', 
+    help = 'Set true to get the output in fastq format')
+    parser.add_argument('-data','--d', action = 'store', type = str, required = True, default = False,
+    help = 'The path to the input data. Must be either fasta or fastq. Can be compressed in gz.')
+    parser.add_argument('-source', '--s', action = 'store', type = str, required = True, choices = ['annotation','experimental','mapped', 'csv'],
+    help = 'The source of the data. Must be either \'experimental\', \' annotation\' or \'mapped\'. Choose experimental for experiments like RNA-direct, annotation for transcriptomes and mapped for mapped cDNA reads. Mapped reads require a paf file to know the orientation.')
+    parser.add_argument('-format', '--f', action = 'store', type = str, choices = ['fasta', 'fastq', 'auto'], default = 'auto',
+    help = 'The format of the input data. Auto by deafult. Change only if inconsistencies in the name.')
+    parser.add_argument('-annotation', '--a', action = 'store', type = str, default = False,
+    help = 'Path to the paf file if a mapped training set which requires a paf reference is being used.')
+    parser.add_argument('-use_all_annotation', '-aa', action = 'store_true', default = False,
+    help = 'Uses all the reads, instead of only keeping antisense,lincRNA,processed_transcript, protein_coding, and retained_intron. Use it also if the fasta has unconventional format and gives errors.')
+    parser.add_argument('-kmers', '--k', action = 'store', type = int, required = False, default = 5,
+    help = 'The maximum length of the kmers used for training, testing and using the models.')
+    parser.add_argument('-fixedkmer', '--fk', action = 'store_true', required = False, default = False,
+    help = 'Only use the last kmer length')
+    parser.add_argument('-reads', '--r', action = 'store', type = int, default = 10e10,
+    help = 'Number of reads to read from the dataset.')
+    parser.add_argument('-trimming', '--t', action = 'store', type = int, default = False,
+    help = 'Number of nucleotides to trimm at each side. 0 by default.')
+    parser.add_argument('-verbose', '--v', action = 'store_true', default = False,
+    help = 'Whether to print detailed information about the training process.')
+    parser.add_argument('-epochs', '--e', action = 'store', default = 20, type = int,
+    help = 'Number of epochs to train the model.')
+    parser.add_argument('-output', '--o', action = 'store', default = 'output',
+    help = 'Where to store the outputs. using "--train" outputs a model, while using "-predict" outputs a csv. Corresponding extensions will be added.')
+    parser.add_argument('-model', '--m', action = 'store',
+    help = 'The model to test or to predict with.')
+    parser.add_argument('-reverse_all', '--ra', action = 'store_true', default = False,
+    help = 'All the sequences will be reversed, instead of half of them')
+    parser.add_argument('-reads_to_model', '--rm', action = 'store', type = int, default = int(10e10),
+    help = 'Number of reads to use from the read ones')
+    parser.add_argument('-one_hot', '--oh', action = 'store_true', default = False,
+    help = 'Use one hot encoding instead of kmer counting')
+    options = parser.parse_args()
 
 
 # Helper functions ------
@@ -605,26 +608,42 @@ def test_model(model, kind_of_data, path_data, n_reads, path_paf, trimming, full
 	print('---------------------------------------------------------\n')
 	if return_predictions:
 		return predictions, labels
-
+    
+def outformat(path_data, data):
+    
+    c=-1
+    updated_file=[]
+    with open(path_data) as handle:
+       
+        for record in SeqIO.parse(handle, 'fastq'):
+            if (data.Orientation[c+1]==1):
+                record=record.reverse_complement(id=True,description=True)
+            c=c+1
+            updated_file.append(record)
+        SeqIO.write(updated_file, options.o+'.fastq', "fastq")
+        
 def make_predictions(model, kind_of_data, path_data, n_reads, path_paf, trimming, full_counting, ks, one_hot):
-	if kind_of_data == 'experimental':
-		sequences = read_experimental_data(path = path_data, trimming = trimming, n_reads = n_reads, format_file = options.f)
-	elif kind_of_data == 'annotation':
-		sequences = read_annotation_data(path = path_data, trimming = trimming, n_reads = n_reads, format_file = options.f)
-	elif kind_of_data == 'mapped':
-		sequences = read_mapped_data(path = path_data, trimming = trimming, n_reads = n_reads, format_file = options.f)
-	elif kind_of_data == 'csv':
-		sequences = pandas.read_csv(path_data, index_col = 0, squeeze = True, nrows = n_reads)
-	data, labels = prepare_data(sequences, 'unknown', full_counting, ks, False, path_paf, one_hot = one_hot, ensure_all_kmers = True)
-	predictions = model.predict(data.values)
-	data = pandas.DataFrame(labels)
-	data['predictions'] = predictions
-	data['orientation'] = 0
-	data.loc[data['predictions'] > 0.5, 'orientation'] = 1	
-	data.loc[data['predictions'] > 0.5, 0] = data[0].apply(reverse_complement)
-	data.loc[data['predictions'] < 0.5, 'predictions'] = 1 - data['predictions']
-	data.columns = ['ForwardSequence', 'Score', 'Orientation']
-	data.to_csv(options.o+'.csv')
+    if kind_of_data == 'experimental':
+        sequences = read_experimental_data(path = path_data, trimming = trimming, n_reads = n_reads, format_file = options.f)
+    elif kind_of_data == 'annotation':
+        sequences = read_annotation_data(path = path_data, trimming = trimming, n_reads = n_reads, format_file = options.f)
+    elif kind_of_data == 'mapped':
+        sequences = read_mapped_data(path = path_data, trimming = trimming, n_reads = n_reads, format_file = options.f)
+    elif kind_of_data == 'csv':
+        sequences = pandas.read_csv(path_data, index_col = 0, squeeze = True, nrows = n_reads)
+    data, labels = prepare_data(sequences, 'unknown', full_counting, ks, False, path_paf, one_hot = one_hot, ensure_all_kmers = True)
+    predictions = model.predict(data.values)
+    data = pandas.DataFrame(labels)
+    data['predictions'] = predictions
+    data['orientation'] = 0
+    data.loc[data['predictions'] > 0.5, 'orientation'] = 1	
+    data.loc[data['predictions'] > 0.5, 0] = data[0].apply(reverse_complement)
+    data.loc[data['predictions'] < 0.5, 'predictions'] = 1 - data['predictions']
+    data.columns = ['ForwardSequence', 'Score', 'Orientation']
+    if (kind_of_data == 'experimental'and options.output_fastq):
+        outformat(path_data,data)
+    else:
+        data.to_csv(options.o+'.csv')    
 
 # Plot functions ------
 
