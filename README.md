@@ -72,6 +72,8 @@ The different options available for MLP (reorientexpress.py) are:
 *  **-data D, --d D**:        The path to the input data. Must be either fasta or
                         fastq. Can be compressed in gz format. Mandatory.
                         
+*  **-output_fastq**:         Set true to get output in fastq format for input fastq file   
+              
 *  **-source {annotation,experimental,mapped}, --s {annotation,experimental,mapped}**:
                         The source of the data. Must be either 'experimental',
                         'annotation' or 'mapped'. Choose experimental for
@@ -124,6 +126,8 @@ The different option available for CNN (reoreintexpress-cnn.py) are:
 *  **-test**:                 Set true to test a model.
 
 *  **-predict**:              Set true to use a model to make predictions
+
+*  **-output_fastq**:         Set true to get output in fastq format for input fastq file  
 
 *  **-data D, --d D**:        The path to the input data. Must be either fasta or
                         fastq. Can be compressed in gz format. Mandatory.
@@ -283,6 +287,10 @@ To make predictions:
 ```
 reorientexpress.py -predict -data path_to_data -source experimental -model path_to_model -output my_predictions
 ```
+or
+```
+reorientexpress.py -output_fastq -predict -data path_to_data -source experimental -model path_to_model -output my_predictions
+```
 
 This takes the experimental data stored in path_to_data and the model stored in path_to_model and predicts the 5'-to-3' orientation of reads, i.e. converts to forward reads the reads that the model predicts are reverse complemented, printing the results in my_predictions.csv. The output format is same as provided in the 'Examples of possible outputs section above'
 
@@ -298,6 +306,12 @@ or
 ```
 reorientexpress-cnn.py -predict -data ./test_case/experimental/Hopkins_Run1_20171011_1D.pass.dedup_60_unique_50k.fastq -model ./saved_models/Hs_transcriptome_CNN.model -source experimental -output my_predictions
 ```
+or
+
+```
+reorientexpress-cnn.py -output_fastq -predict -data ./test_case/experimental/Hopkins_Run1_20171011_1D.pass.dedup_60_unique_50k.fastq -model ./saved_models/Hs_transcriptome_CNN.model -source experimental -output my_predictions
+```
+
 
 To test the accuracy of the model:
 
