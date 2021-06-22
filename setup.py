@@ -2,13 +2,14 @@ import setuptools
 
 setuptools.setup(
     name = 'reorientexpress',
-    version = '0.105',
+    version = '0.2',
     scripts = ['reorientexpress.py', 'reorientexpress-cnn.py'],
     install_requires=[
         'numpy>=1.15.3',
         'Keras>=2.2.4',
         'pandas>=0.23.4',
         'scikit_learn>=0.20.1',
+        'biopython',
         'tensorflow>=1.11.0'
         ],
     author = 'Angel Ruiz Reche',
