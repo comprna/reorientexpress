@@ -296,7 +296,7 @@ reorientexpress.py -predict -data ./test_case/experimental/Hopkins_Run1_20171011
 or 
 
 ```
-reorientexpress-cnn.py -predict -data ./test_case/experimental/Hopkins_Run1_20171011_1D.pass.dedup_60_unique_50k.fastq -model ./saved_models/Hs_transcriptome_mlp.model -source experimental -output my_predictions
+reorientexpress-cnn.py -predict -data ./test_case/experimental/Hopkins_Run1_20171011_1D.pass.dedup_60_unique_50k.fastq -model ./saved_models/Hs_transcriptome_CNN.model -source experimental -output my_predictions
 ```
 
 To test the accuracy of the model:
@@ -313,7 +313,7 @@ reorientexpress.py -test -data ./test_case/mapped/Hopkins_Run1_20171011_1D.pass.
 or 
 
 ```
-reorientexpress-cnn.py -test -data ./test_case/mapped/Hopkins_Run1_20171011_1D.pass.dedup_60_unique_2000.fastq -annotation ./test_case/mapped/cdna_human_no_secondary_mapq_60_unique_2000.paf -model ./saved_models/Hs_transcriptome_mlp.model -source mapped
+reorientexpress-cnn.py -test -data ./test_case/mapped/Hopkins_Run1_20171011_1D.pass.dedup_60_unique_2000.fastq -annotation ./test_case/mapped/cdna_human_no_secondary_mapq_60_unique_2000.paf -model ./saved_models/Hs_transcriptome_CNN.model -source mapped
 ```
 
 The ouput accuracy (precision, recall, F1-score, support) will be displayed on the screen. 
